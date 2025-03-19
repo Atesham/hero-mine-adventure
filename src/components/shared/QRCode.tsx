@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
+// Using default import for compatibility
 import QRCodeStyling from 'qr-code-styling';
 
 interface QRCodeProps {
