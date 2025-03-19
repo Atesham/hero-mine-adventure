@@ -2,32 +2,59 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { PlayCircle, Clock, Loader2, Coins } from 'lucide-react';
+import { PlayCircle, Clock, Loader2, Coins, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { Link } from 'react-router-dom';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, increment } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const MiningCard = () => {
   const [isMining, setIsMining] = useState(false);
   const [progress, setProgress] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState<null | number>(null);
   const [adWatched, setAdWatched] = useState(0);
+  const { user } = useAuth();
   
   useEffect(() => {
-    // Check if there's a cooldown stored in localStorage
-    const storedCooldownEnd = localStorage.getItem('miningCooldownEnd');
-    if (storedCooldownEnd) {
-      const cooldownEnd = parseInt(storedCooldownEnd);
-      const now = Date.now();
-      
-      if (cooldownEnd > now) {
-        // Still in cooldown
-        setTimeRemaining(Math.ceil((cooldownEnd - now) / 1000));
-      } else {
-        // Cooldown has ended
-        localStorage.removeItem('miningCooldownEnd');
-        setTimeRemaining(null);
+    if (!user) return;
+    
+    // Check cooldown from Firestore
+    const checkCooldown = async () => {
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const lastMiningTime = userData.lastMiningTime?.toDate();
+          
+          if (lastMiningTime) {
+            const cooldownEnd = new Date(lastMiningTime.getTime() + (12 * 60 * 60 * 1000)); // 12 hours cooldown
+            const now = new Date();
+            
+            if (cooldownEnd > now) {
+              // Still in cooldown
+              setTimeRemaining(Math.ceil((cooldownEnd.getTime() - now.getTime()) / 1000));
+            }
+          }
+        } else {
+          // Create user document if it doesn't exist
+          await setDoc(userRef, {
+            displayName: user.displayName || user.email?.split('@')[0],
+            email: user.email,
+            coins: 0,
+            totalMined: 0,
+            createdAt: serverTimestamp(),
+          });
+        }
+      } catch (error) {
+        console.error('Error checking cooldown:', error);
       }
-    }
-  }, []);
+    };
+    
+    checkCooldown();
+  }, [user]);
   
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -70,7 +97,6 @@ const MiningCard = () => {
           if (prev === null || prev <= 1) {
             clearInterval(interval);
             setTimeRemaining(null);
-            localStorage.removeItem('miningCooldownEnd');
             return null;
           }
           return prev - 1;
@@ -94,31 +120,75 @@ const MiningCard = () => {
   };
   
   const startMining = () => {
-    if (isMining || timeRemaining) return;
+    if (!user || isMining || timeRemaining) return;
     
     toast.info('Starting mining process', {
       description: 'Watch the ad to earn Hero Coins'
     });
     
     setIsMining(true);
+    
+    // In a real app, you would trigger the ad network SDK here
+    // For example: AdMob.showRewardedAd();
   };
   
-  const handleMiningComplete = () => {
-    // Set cooldown (12 hours)
-    const cooldownDuration = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
-    const cooldownEnd = Date.now() + cooldownDuration;
+  const handleMiningComplete = async () => {
+    if (!user) return;
     
-    localStorage.setItem('miningCooldownEnd', cooldownEnd.toString());
-    setTimeRemaining(12 * 60 * 60); // 12 hours in seconds
-    setAdWatched(0);
-    
-    // Show success notification
-    const randomCoins = Math.floor(Math.random() * 10) + 5; // Random between 5-15
-    
-    toast.success(`Mining successful!`, {
-      description: `You've earned ${randomCoins} Hero Coins`
-    });
+    try {
+      // Generate random coin reward (5-15 coins)
+      const randomCoins = Math.floor(Math.random() * 11) + 5;
+      
+      // Update user's coin balance and set cooldown
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        coins: increment(randomCoins),
+        totalMined: increment(randomCoins),
+        lastMiningTime: serverTimestamp(),
+        miningHistory: {
+          timestamp: serverTimestamp(),
+          amount: randomCoins
+        }
+      });
+      
+      // Set cooldown (12 hours)
+      const cooldownDuration = 12 * 60 * 60; // 12 hours in seconds
+      setTimeRemaining(cooldownDuration);
+      setAdWatched(0);
+      
+      // Show success notification
+      toast.success(`Mining successful!`, {
+        description: `You've earned ${randomCoins} Hero Coins`
+      });
+    } catch (error) {
+      console.error('Error updating mining rewards:', error);
+      toast.error('Failed to update mining rewards');
+    }
   };
+
+  // If user is not logged in, show login prompt
+  if (!user) {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <div className="glass-card rounded-3xl p-8 shadow-lg text-center">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Coins className="w-8 h-8 text-primary" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Login Required</h2>
+          <p className="text-muted-foreground mb-6">
+            You need to be logged in to start mining Hero Coins
+          </p>
+          
+          <Button asChild className="rounded-xl">
+            <Link to="/login">
+              <LogIn className="mr-2 h-5 w-5" />
+              Log In to Start Mining
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-md mx-auto">

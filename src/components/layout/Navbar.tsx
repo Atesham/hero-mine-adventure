@@ -1,15 +1,26 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Moon, Sun, Wallet, BarChart, Pickaxe } from 'lucide-react';
+import { Menu, X, Moon, Sun, Wallet, BarChart, Pickaxe, LogOut, LogIn, User } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -42,6 +53,16 @@ const Navbar = () => {
   };
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+      closeMobileMenu();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -113,12 +134,50 @@ const Navbar = () => {
             <span className="sr-only">Toggle menu</span>
           </Button>
           
-          <Button
-            className="hidden md:flex rounded-full"
-            size="sm"
-          >
-            Sign In
-          </Button>
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="rounded-full">
+                  <User className="h-5 w-5 mr-2" />
+                  <span className="hidden md:inline-block truncate max-w-[100px]">
+                    {user.displayName || user.email?.split('@')[0]}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/wallet">
+                    <Wallet className="h-4 w-4 mr-2" />
+                    Wallet
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/mining">
+                    <Pickaxe className="h-4 w-4 mr-2" />
+                    Mining
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Log Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button
+              asChild
+              className="hidden md:flex rounded-full"
+              size="sm"
+            >
+              <Link to="/login">
+                <LogIn className="h-4 w-4 mr-1" />
+                Sign In
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
       
@@ -142,12 +201,29 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
-            <Button
-              className="w-full mt-2 rounded-full"
-              size="sm"
-            >
-              Sign In
-            </Button>
+            
+            {user ? (
+              <Button
+                variant="outline"
+                className="w-full mt-2 rounded-full justify-start"
+                size="sm"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Log Out
+              </Button>
+            ) : (
+              <Button
+                asChild
+                className="w-full mt-2 rounded-full"
+                size="sm"
+              >
+                <Link to="/login" onClick={closeMobileMenu}>
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Sign In
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
       )}
