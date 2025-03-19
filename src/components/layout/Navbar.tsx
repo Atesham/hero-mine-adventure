@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Moon, Sun, Wallet, BarChart, Pick } from 'lucide-react';
+import { Menu, X, Moon, Sun, Wallet, BarChart, Pickaxe } from 'lucide-react';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -45,7 +45,7 @@ const Navbar = () => {
 
   const navLinks = [
     { name: 'Home', path: '/' },
-    { name: 'Mining', path: '/mining', icon: <Pick className="h-4 w-4 mr-1" /> },
+    { name: 'Mining', path: '/mining', icon: <Pickaxe className="h-4 w-4 mr-1" /> },
     { name: 'Wallet', path: '/wallet', icon: <Wallet className="h-4 w-4 mr-1" /> },
     { name: 'Leaderboard', path: '/leaderboard', icon: <BarChart className="h-4 w-4 mr-1" /> },
   ];
