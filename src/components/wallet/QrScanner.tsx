@@ -67,14 +67,14 @@ const QrScanner = ({ onScan }: QrScannerProps) => {
     const detectQRCode = async () => {
       try {
         // Import the QR code reader library dynamically
-        const QrCodeReader = await import('qr-scanner');
+        const { default: QrScanner } = await import('qr-scanner');
         
         const checkForQR = async () => {
           if (!videoRef.current || !scanning) return;
           
           try {
-            const result = await QrCodeReader.default.scanImage(videoRef.current);
-            if (result && result.data) {
+            const result = await QrScanner.scanImage(videoRef.current);
+            if (result) {
               // Play a success sound
               const audio = new Audio('/beep.mp3');
               audio.play().catch(e => console.log('Audio play failed', e));
@@ -85,7 +85,7 @@ const QrScanner = ({ onScan }: QrScannerProps) => {
               }
               
               // Call the onScan callback with the result
-              onScan(result.data);
+              onScan(result);
               setScanning(false);
             }
           } catch (err) {
