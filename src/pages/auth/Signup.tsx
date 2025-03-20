@@ -1,235 +1,232 @@
 
 import React, { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { UserPlus, Mail, Lock, User, Loader2, AlertTriangle, Check, Coins } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { Loader2, Mail, Key, User, EyeIcon, EyeOffIcon } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
+const signupSchema = z.object({
+  username: z.string().min(3, 'Username must be at least 3 characters'),
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+type SignupFormValues = z.infer<typeof signupSchema>;
 
 const Signup = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { signup, loginWithGoogle, user } = useAuth();
+  const { signup, loginWithGoogle, isGoogleAuthAvailable } = useAuth();
   const navigate = useNavigate();
-
-  // If user is already logged in, redirect to homepage
-  if (user) {
-    return <Navigate to="/mining" />;
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    
-    // Validation
-    if (!name || !email || !password || !confirmPassword) {
-      setError('Please fill in all fields');
-      return;
-    }
-    
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-    
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  
+  const { register, handleSubmit, formState: { errors } } = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+    mode: 'onBlur',
+  });
+  
+  const onSubmit = async (data: SignupFormValues) => {
     try {
       setLoading(true);
-      await signup(email, password, name);
-      navigate('/mining');
-    } catch (err: any) {
-      setError(err.message);
-      toast.error('Signup failed', {
-        description: err.message
+      await signup(data.email, data.password, data.username);
+      
+      // Create initial wallet data
+      await setDoc(doc(db, 'walletData', data.email), {
+        balance: 0,
+        transactions: []
+      });
+      
+      navigate('/');
+    } catch (error: any) {
+      toast.error('Sign up failed', {
+        description: error.message
       });
     } finally {
       setLoading(false);
     }
   };
-
+  
   const handleGoogleSignup = async () => {
     try {
-      setLoading(true);
+      setGoogleLoading(true);
       await loginWithGoogle();
-      navigate('/mining');
-    } catch (err: any) {
-      setError(err.message);
-      toast.error('Google signup failed', {
-        description: err.message
-      });
+      navigate('/');
+    } catch (error: any) {
+      // Error is already handled in the AuthContext
     } finally {
-      setLoading(false);
+      setGoogleLoading(false);
     }
   };
-
+  
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/10 px-4">
-      <div className="glass-card rounded-3xl p-8 md:p-10 w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
-            Join HeroCoin
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Create your account and start earning today
-          </p>
-        </div>
+    <div className="min-h-screen flex flex-col">
+      <div className="flex min-h-screen flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+        <div className="glass-card sm:mx-auto sm:w-full sm:max-w-md p-8 rounded-xl">
+          <div className="mb-10 flex flex-col items-center">
+            <Link to="/" className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
+              Hero Coin
+            </Link>
+            <h2 className="mt-5 text-center text-2xl font-bold leading-9">
+              Create your account
+            </h2>
+            <p className="mt-2 text-center text-sm text-muted-foreground">
+              Already have an account?{' '}
+              <Link to="/login" className="font-semibold text-primary hover:text-primary/90">
+                Sign in
+              </Link>
+            </p>
+          </div>
 
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        <div className="glass-card bg-primary/5 rounded-xl p-5 mb-8">
-          <h3 className="font-semibold mb-3 flex items-center">
-            <Coins className="w-5 h-5 mr-2 text-primary" />
-            What you'll get:
-          </h3>
-          <ul className="space-y-2">
-            <li className="flex items-start">
-              <Check className="w-4 h-4 mr-2 text-green-500 mt-0.5" />
-              <span className="text-sm">Mine Hero Coins every 12 hours</span>
-            </li>
-            <li className="flex items-start">
-              <Check className="w-4 h-4 mr-2 text-green-500 mt-0.5" />
-              <span className="text-sm">Earn 5-15 coins per mining session</span>
-            </li>
-            <li className="flex items-start">
-              <Check className="w-4 h-4 mr-2 text-green-500 mt-0.5" />
-              <span className="text-sm">Send and receive coins to other users</span>
-            </li>
-            <li className="flex items-start">
-              <Check className="w-4 h-4 mr-2 text-green-500 mt-0.5" />
-              <span className="text-sm">Compete on the global leaderboard</span>
-            </li>
-          </ul>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <div className="relative">
-              <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+            <div className="space-y-2">
+              <Label htmlFor="username" className="flex items-center gap-1">
+                <User className="h-4 w-4" />
+                Username
+              </Label>
               <Input
+                id="username"
                 type="text"
-                placeholder="Full Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="pl-10"
+                autoComplete="username"
+                {...register('username')}
+                className={errors.username ? 'border-destructive' : ''}
               />
+              {errors.username && (
+                <p className="text-sm text-destructive">{errors.username.message}</p>
+              )}
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <div className="space-y-2">
+              <Label htmlFor="email" className="flex items-center gap-1">
+                <Mail className="h-4 w-4" />
+                Email address
+              </Label>
               <Input
+                id="email"
                 type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-10"
+                autoComplete="email"
+                {...register('email')}
+                className={errors.email ? 'border-destructive' : ''}
               />
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email.message}</p>
+              )}
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-10"
-              />
+            <div className="space-y-2">
+              <Label htmlFor="password" className="flex items-center gap-1">
+                <Key className="h-4 w-4" />
+                Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  {...register('password')}
+                  className={errors.password ? 'border-destructive pr-10' : 'pr-10'}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOffIcon className="h-4 w-4" />
+                  ) : (
+                    <EyeIcon className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-sm text-destructive">{errors.password.message}</p>
+              )}
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="password"
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="pl-10"
-              />
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="flex items-center gap-1">
+                <Key className="h-4 w-4" />
+                Confirm Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  {...register('confirmPassword')}
+                  className={errors.confirmPassword ? 'border-destructive pr-10' : 'pr-10'}
+                />
+              </div>
+              {errors.confirmPassword && (
+                <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
+              )}
             </div>
-          </div>
 
-          <Button 
-            type="submit" 
-            className="w-full rounded-xl py-6" 
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating Account...
-              </>
-            ) : (
-              <>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Create Account
-              </>
-            )}
-          </Button>
-        </form>
+            <Button
+              type="submit"
+              className="w-full flex gap-2 items-center"
+              disabled={loading}
+            >
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Create Account
+            </Button>
+          </form>
 
-        <div className="relative flex items-center justify-center my-6">
-          <div className="absolute w-full border-t border-border"></div>
-          <span className="relative bg-background px-2 text-sm text-muted-foreground">
-            Or continue with
-          </span>
-        </div>
+          {isGoogleAuthAvailable && (
+            <>
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-muted"></div>
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                </div>
+              </div>
 
-        <Button 
-          variant="outline" 
-          className="w-full rounded-xl"
-          onClick={handleGoogleSignup}
-          disabled={loading}
-        >
-          <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-            <path
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              fill="#4285F4"
-            />
-            <path
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              fill="#34A853"
-            />
-            <path
-              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-              fill="#FBBC05"
-            />
-            <path
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-              fill="#EA4335"
-            />
-          </svg>
-          Continue with Google
-        </Button>
-
-        <div className="mt-6 text-center text-sm">
-          <span className="text-muted-foreground">Already have an account? </span>
-          <Link 
-            to="/login" 
-            className="text-primary font-medium hover:underline"
-          >
-            Log in
-          </Link>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleGoogleSignup}
+                disabled={googleLoading}
+              >
+                {googleLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <svg className="mr-2 h-4 w-4" viewBox="0 0 48 48" aria-hidden="true">
+                    <path
+                      fill="#FFC107"
+                      d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
+                    />
+                    <path
+                      fill="#FF3D00"
+                      d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
+                    />
+                    <path
+                      fill="#4CAF50"
+                      d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"
+                    />
+                    <path
+                      fill="#1976D2"
+                      d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"
+                    />
+                  </svg>
+                )}
+                Sign up with Google
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>
