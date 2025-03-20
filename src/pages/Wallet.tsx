@@ -3,92 +3,60 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Container from '@/components/ui/Container';
-import { Wallet as WalletIcon, History, ArrowDownUp, Share, QrCode, Send, Info, Loader2 } from 'lucide-react';
+import { Wallet as WalletIcon, History, ArrowDownUp, QrCode, Info, Loader2, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { doc, getDoc, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import QRCodeComponent from '@/components/shared/QRCode';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
-
-interface Transaction {
-  id: string;
-  type: 'reward' | 'sent' | 'received';
-  amount: number;
-  timestamp: Date;
-  description: string;
-  counterpartyName?: string;
-}
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { getUserWalletData, Transaction } from '@/services/transactionService';
+import SendCoinsDialog from '@/components/wallet/SendCoinsDialog';
 
 const Wallet = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [balance, setBalance] = useState<number>(0);
   const [miningRewards, setMiningRewards] = useState<number>(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [walletAddress, setWalletAddress] = useState<string>('');
 
-  useEffect(() => {
+  const fetchWalletData = async () => {
     if (!user) return;
 
-    const fetchWalletData = async () => {
-      try {
-        setLoading(true);
-        // Generate a deterministic wallet address based on user UID
-        const address = `HC-${user.uid.substring(0, 12).toUpperCase()}`;
-        setWalletAddress(address);
+    try {
+      setError(null);
+      setLoading(true);
+      
+      const walletData = await getUserWalletData(user.uid);
+      
+      setBalance(walletData.balance);
+      setMiningRewards(walletData.totalMined);
+      setTransactions(walletData.transactions);
+      setWalletAddress(walletData.walletAddress);
+    } catch (error: any) {
+      console.error('Error fetching wallet data:', error);
+      setError('Could not load your wallet data. Please try again later.');
+      toast.error('Error loading wallet', {
+        description: 'Could not load your wallet data. Please try again later.'
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
-        // Fetch user data (balance, total mined)
-        const userRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userRef);
-
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setBalance(userData.coins || 0);
-          setMiningRewards(userData.totalMined || 0);
-        }
-
-        // Fetch recent transactions
-        const transactionsQuery = query(
-          collection(db, 'transactions'),
-          where('userId', '==', user.uid),
-          orderBy('timestamp', 'desc'),
-          limit(10)
-        );
-
-        const transactionsSnapshot = await getDocs(transactionsQuery);
-        const transactionsData: Transaction[] = [];
-
-        transactionsSnapshot.forEach((doc) => {
-          const data = doc.data();
-          transactionsData.push({
-            id: doc.id,
-            type: data.type,
-            amount: data.amount,
-            timestamp: data.timestamp.toDate(),
-            description: data.description,
-            counterpartyName: data.counterpartyName
-          });
-        });
-
-        setTransactions(transactionsData);
-      } catch (error) {
-        console.error('Error fetching wallet data:', error);
-        toast({
-          title: 'Error loading wallet',
-          description: 'Could not load your wallet data. Please try again later.',
-          variant: 'destructive'
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  useEffect(() => {
     fetchWalletData();
-  }, [user, toast]);
+  }, [user]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchWalletData();
+  };
 
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -116,8 +84,7 @@ const Wallet = () => {
 
   const copyAddressToClipboard = () => {
     navigator.clipboard.writeText(walletAddress);
-    toast({
-      title: 'Address Copied',
+    toast.success('Address Copied', {
       description: 'Your wallet address has been copied to clipboard',
     });
   };
@@ -149,6 +116,21 @@ const Wallet = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="ml-2 text-lg">Loading your wallet...</p>
             </div>
+          ) : error ? (
+            <Alert variant="destructive" className="max-w-2xl mx-auto mb-8">
+              <AlertTitle>Error loading wallet</AlertTitle>
+              <AlertDescription>
+                {error}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2"
+                  onClick={handleRefresh}
+                >
+                  Try Again
+                </Button>
+              </AlertDescription>
+            </Alert>
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
@@ -178,7 +160,7 @@ const Wallet = () => {
               </div>
               
               <div className="glass-card rounded-xl p-6 mb-8">
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                   <h3 className="text-xl font-bold">Your Wallet</h3>
                   <div className="flex space-x-2">
                     <Dialog>
@@ -191,6 +173,9 @@ const Wallet = () => {
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Your Hero Coins Wallet</DialogTitle>
+                          <DialogDescription>
+                            Other users can scan this QR code to send you Hero Coins
+                          </DialogDescription>
                         </DialogHeader>
                         <div className="flex flex-col items-center justify-center p-4">
                           <QRCodeComponent value={walletAddress} size={250} />
@@ -203,9 +188,15 @@ const Wallet = () => {
                     </Dialog>
                     
                     <Button variant="outline" size="sm" onClick={copyAddressToClipboard}>
-                      <Send className="w-4 h-4 mr-2" />
+                      <QrCode className="w-4 h-4 mr-2" />
                       Copy Address
                     </Button>
+                    
+                    <SendCoinsDialog 
+                      userId={user.uid} 
+                      balance={balance}
+                      onSuccess={fetchWalletData}
+                    />
                   </div>
                 </div>
                 
@@ -216,8 +207,23 @@ const Wallet = () => {
                 
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-semibold">Recent Transactions</h4>
-                  <Button variant="ghost" size="sm">
-                    See All
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                  >
+                    {refreshing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Refreshing...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Refresh
+                      </>
+                    )}
                   </Button>
                 </div>
                 
@@ -227,6 +233,12 @@ const Wallet = () => {
                       <div key={transaction.id} className="flex justify-between items-center p-4 bg-secondary/50 rounded-lg">
                         <div>
                           <p className="font-medium">{transaction.description}</p>
+                          {transaction.counterpartyName && (
+                            <p className="text-xs text-muted-foreground">
+                              {transaction.type === 'sent' ? 'To: ' : 'From: '} 
+                              {transaction.counterpartyName}
+                            </p>
+                          )}
                           <p className="text-sm text-muted-foreground">{formatDate(transaction.timestamp)}</p>
                         </div>
                         <p className={`font-bold ${transaction.type === 'reward' || transaction.type === 'received' ? 'text-green-500' : 'text-red-500'}`}>
