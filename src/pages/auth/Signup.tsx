@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { UserPlus, Mail, Lock, User, Loader2, AlertTriangle, Check, Coins } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Loader2, AlertTriangle, Check, Coins, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Signup = () => {
@@ -14,6 +14,7 @@ const Signup = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [googleDisabled, setGoogleDisabled] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signup, loginWithGoogle, user } = useAuth();
   const navigate = useNavigate();
@@ -64,9 +65,11 @@ const Signup = () => {
       navigate('/mining');
     } catch (err: any) {
       setError(err.message);
-      toast.error('Google signup failed', {
-        description: err.message
-      });
+      
+      // If it's an unauthorized domain error, disable the Google button
+      if (err.message.includes('not authorized')) {
+        setGoogleDisabled(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -88,6 +91,15 @@ const Signup = () => {
           <Alert variant="destructive" className="mb-6">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {googleDisabled && (
+          <Alert variant="warning" className="mb-6 bg-amber-100 dark:bg-amber-900/20 border-amber-300 dark:border-amber-800">
+            <Info className="h-4 w-4 text-amber-800 dark:text-amber-500" />
+            <AlertDescription className="text-amber-800 dark:text-amber-500">
+              Google signup is not available in this environment. Please use email/password signup instead.
+            </AlertDescription>
           </Alert>
         )}
 
@@ -199,7 +211,7 @@ const Signup = () => {
           variant="outline" 
           className="w-full rounded-xl"
           onClick={handleGoogleSignup}
-          disabled={loading}
+          disabled={loading || googleDisabled}
         >
           <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
             <path

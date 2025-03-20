@@ -57,7 +57,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error: any) {
       console.error('Signup error:', error);
-      throw new Error(error.message || 'Failed to create account');
+      
+      // Handle specific Firebase errors with user-friendly messages
+      if (error.code === 'auth/email-already-in-use') {
+        throw new Error('This email is already in use. Please try a different one.');
+      } else if (error.code === 'auth/invalid-email') {
+        throw new Error('Please enter a valid email address.');
+      } else if (error.code === 'auth/weak-password') {
+        throw new Error('Password is too weak. Please use at least 6 characters.');
+      } else {
+        throw new Error(error.message || 'Failed to create account');
+      }
     }
   };
 
@@ -67,7 +77,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Logged in successfully!');
     } catch (error: any) {
       console.error('Login error:', error);
-      throw new Error(error.message || 'Failed to log in');
+      
+      // Handle specific Firebase errors with user-friendly messages
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        throw new Error('Invalid email or password. Please try again.');
+      } else if (error.code === 'auth/too-many-requests') {
+        throw new Error('Too many failed login attempts. Please try again later.');
+      } else {
+        throw new Error(error.message || 'Failed to log in');
+      }
     }
   };
 
@@ -78,7 +96,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Logged in successfully with Google!');
     } catch (error: any) {
       console.error('Google login error:', error);
-      throw new Error(error.message || 'Failed to log in with Google');
+      
+      // Handle unauthorized domain error specifically
+      if (error.code === 'auth/unauthorized-domain') {
+        toast.error('Google login is not available in this environment', {
+          description: 'Please use email/password login instead.',
+          duration: 5000
+        });
+        throw new Error('This domain is not authorized for Google login. Please use email/password login instead.');
+      } else {
+        throw new Error(error.message || 'Failed to log in with Google');
+      }
     }
   };
 
