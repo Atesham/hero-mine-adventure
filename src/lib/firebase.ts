@@ -4,13 +4,13 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBXwya7i0m5BFoIwJpHu54o0NbblpGDL9k",
-  authDomain: "herocoin-mining.firebaseapp.com",
-  projectId: "herocoin-mining",
-  storageBucket: "herocoin-mining.appspot.com",
-  messagingSenderId: "291875698023",
-  appId: "1:291875698023:web:88a563175afaa068a4c123",
-  measurementId: "G-D1VY2JNEZQ"
+  apiKey: "AIzaSyAtuqroUbp9TpqjNvbl99eDaihRMenhEqw",
+  authDomain: "pint-145f3.firebaseapp.com",
+  projectId: "pint-145f3",
+  storageBucket: "pint-145f3.appspot.com",
+  messagingSenderId: "77141015675",
+  appId: "1:77141015675:web:c6d8a85808f1bc798ab6de",
+  measurementId: "G-B7ZLVRH8FF"
 };
 
 // Initialize Firebase
