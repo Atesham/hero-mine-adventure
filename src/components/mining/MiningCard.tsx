@@ -6,7 +6,7 @@ import { PlayCircle, Clock, Loader2, Coins, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, increment } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, increment, collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 const MiningCard = () => {
@@ -144,11 +144,16 @@ const MiningCard = () => {
       await updateDoc(userRef, {
         coins: increment(randomCoins),
         totalMined: increment(randomCoins),
-        lastMiningTime: serverTimestamp(),
-        miningHistory: {
-          timestamp: serverTimestamp(),
-          amount: randomCoins
-        }
+        lastMiningTime: serverTimestamp()
+      });
+      
+      // Add transaction record
+      await addDoc(collection(db, 'transactions'), {
+        userId: user.uid,
+        type: 'reward',
+        amount: randomCoins,
+        timestamp: serverTimestamp(),
+        description: 'Mining Reward'
       });
       
       // Set cooldown (12 hours)

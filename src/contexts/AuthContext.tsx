@@ -10,8 +10,9 @@ import {
   updateProfile,
   User as FirebaseUser
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { toast } from 'sonner';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -20,6 +21,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  isGoogleAuthAvailable: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,10 +37,33 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isGoogleAuthAvailable, setIsGoogleAuthAvailable] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+      
+      if (user) {
+        // Check if user document exists, if not create it
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userRef);
+          
+          if (!userSnap.exists()) {
+            // Create new user document
+            await setDoc(userRef, {
+              displayName: user.displayName || user.email?.split('@')[0],
+              email: user.email,
+              coins: 0,
+              totalMined: 0,
+              createdAt: serverTimestamp(),
+            });
+          }
+        } catch (error) {
+          console.error("Error checking/creating user document:", error);
+        }
+      }
+      
       setLoading(false);
     });
 
@@ -53,6 +78,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (userCredential.user) {
         await updateProfile(userCredential.user, { displayName });
         setUser({ ...userCredential.user, displayName });
+        
+        // Create user document in Firestore
+        const userRef = doc(db, 'users', userCredential.user.uid);
+        await setDoc(userRef, {
+          displayName,
+          email,
+          coins: 0,
+          totalMined: 0,
+          createdAt: serverTimestamp(),
+        });
+        
         toast.success('Account created successfully!');
       }
     } catch (error: any) {
@@ -99,6 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Handle unauthorized domain error specifically
       if (error.code === 'auth/unauthorized-domain') {
+        setIsGoogleAuthAvailable(false);
         toast.error('Google login is not available in this environment', {
           description: 'Please use email/password login instead.',
           duration: 5000
@@ -126,7 +163,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signup,
     login,
     loginWithGoogle,
-    logout
+    logout,
+    isGoogleAuthAvailable
   };
 
   return (
