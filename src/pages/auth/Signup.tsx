@@ -12,6 +12,8 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import Navbar from '@/components/layout/Navbar';
+
 
 const signupSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
@@ -71,8 +73,10 @@ const Signup = () => {
   };
   
   return (
+    // <div className="min-h-screen flex flex-col">
     <div className="min-h-screen flex flex-col">
-      <div className="flex min-h-screen flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+      <Navbar />
+<div className="flex min-h-screen flex-1 flex-col justify-center px-6 py-12 lg:px-8">
         <div className="glass-card sm:mx-auto sm:w-full sm:max-w-md p-8 rounded-xl">
           <div className="mb-10 flex flex-col items-center">
             <Link to="/" className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
