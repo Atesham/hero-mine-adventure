@@ -10,6 +10,7 @@ import Wallet from "./pages/Wallet";
 import Leaderboard from "./pages/Leaderboard";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
+import Referrals from "./pages/Referrals";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/mining" element={<Mining />} />
             <Route path="/wallet" element={<Wallet />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/referrals" element={<Referrals />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="*" element={<NotFound />} />

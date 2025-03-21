@@ -5,14 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Users, Copy, Gift, UserPlus, ArrowRight } from 'lucide-react';
-import { getUserReferrals, generateReferralLink } from '@/services/referralService';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { Users, Copy, Gift, UserPlus, ArrowRight, Link, Award, RefreshCw } from 'lucide-react';
+import { getUserReferrals, generateReferralLink, getUserReferralCode, getReferralStats } from '@/services/referralService';
+import { Link as RouterLink } from 'react-router-dom';
+import inviteImage from '@/assets/invite.png';
 
 interface ReferralData {
   referralCode: string;
   totalReferrals: number;
+  totalRewards: number;
 }
 
 const ReferralSection = () => {
@@ -21,53 +22,78 @@ const ReferralSection = () => {
   const [referrals, setReferrals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [referralLink, setReferralLink] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  
+  const fetchReferralData = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      // Get user's referral code
+      const code = await getUserReferralCode(user.uid);
+      
+      if (!code) {
+        toast.error('Could not get your referral code');
+        return;
+      }
+      
+      // Get user's referrals
+      const userReferrals = await getUserReferrals(user.uid);
+      const stats = await getReferralStats(user.uid);
+      
+      setReferralData({
+        referralCode: code,
+        totalReferrals: stats.total,
+        totalRewards: stats.totalRewards
+      });
+      
+      setReferrals(userReferrals);
+      
+      // Generate referral link
+      if (code) {
+        const link = generateReferralLink(code);
+        setReferralLink(link);
+      }
+    } catch (error) {
+      console.error('Error fetching referral data:', error);
+      toast.error('Failed to load referral data');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
   
   useEffect(() => {
-    const fetchReferralData = async () => {
-      if (!user) return;
-      
-      try {
-        setLoading(true);
-        // Get user's referral code
-        const userRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userRef);
-        
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          const code = userData.referralCode || '';
-          
-          // Get user's referrals
-          const userReferrals = await getUserReferrals(user.uid);
-          
-          setReferralData({
-            referralCode: code,
-            totalReferrals: userReferrals.length
-          });
-          
-          setReferrals(userReferrals);
-          
-          // Generate referral link
-          if (code) {
-            setReferralLink(generateReferralLink(code));
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching referral data:', error);
-        toast.error('Failed to load referral data');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchReferralData();
   }, [user]);
   
+  const refreshReferrals = () => {
+    setRefreshing(true);
+    fetchReferralData();
+  };
+  
   const copyReferralLink = () => {
-    navigator.clipboard.writeText(referralLink);
-    toast.success('Referral link copied to clipboard!');
+    if (!referralLink) {
+      toast.error('No referral link to copy');
+      return;
+    }
+    
+    navigator.clipboard.writeText(referralLink)
+      .then(() => {
+        toast.success('Referral link copied to clipboard!');
+      })
+      .catch((err) => {
+        console.error('Failed to copy:', err);
+        toast.error('Failed to copy referral link');
+      });
   };
   
   const shareReferralLink = async () => {
+    if (!referralLink) {
+      toast.error('No referral link to share');
+      return;
+    }
+    
     if (navigator.share) {
       try {
         await navigator.share({
@@ -108,72 +134,92 @@ const ReferralSection = () => {
         
         <div className="max-w-4xl mx-auto">
           <div className="glass-card rounded-xl p-6 md:p-8 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="text-center p-4 rounded-lg bg-primary/5">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Gift className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-1">Your Reward</h3>
-                <p className="text-2xl font-bold text-primary">25 Coins</p>
+            <div className="flex flex-col md:flex-row items-center gap-6 mb-8">
+              <div className="md:w-1/3">
+                <img src={inviteImage} alt="Invite friends" className="w-full max-w-[240px] mx-auto hover-scale" />
               </div>
               
-              <div className="text-center p-4 rounded-lg bg-primary/5">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <UserPlus className="w-6 h-6 text-primary" />
+              <div className="md:w-2/3 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center p-4 rounded-lg bg-primary/5">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Gift className="w-6 h-6 text-primary" />
+                    </div>
+                    <h3 className="font-semibold mb-1">Your Reward</h3>
+                    <p className="text-2xl font-bold text-primary">25 Coins</p>
+                  </div>
+                  
+                  <div className="text-center p-4 rounded-lg bg-primary/5">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <UserPlus className="w-6 h-6 text-primary" />
+                    </div>
+                    <h3 className="font-semibold mb-1">Total Referrals</h3>
+                    <p className="text-2xl font-bold text-primary">{referralData?.totalReferrals || 0}</p>
+                  </div>
+                  
+                  <div className="text-center p-4 rounded-lg bg-primary/5">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Award className="w-6 h-6 text-primary" />
+                    </div>
+                    <h3 className="font-semibold mb-1">Friend's Reward</h3>
+                    <p className="text-2xl font-bold text-primary">10 Coins</p>
+                  </div>
                 </div>
-                <h3 className="font-semibold mb-1">Total Referrals</h3>
-                <p className="text-2xl font-bold text-primary">{referralData?.totalReferrals || 0}</p>
-              </div>
-              
-              <div className="text-center p-4 rounded-lg bg-primary/5">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Gift className="w-6 h-6 text-primary" />
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <Link className="h-5 w-5 text-primary" />
+                    Your Referral Link
+                  </h3>
+                  <div className="flex space-x-2">
+                    <Input 
+                      value={referralLink} 
+                      readOnly 
+                      className="font-mono text-sm"
+                      onClick={() => copyReferralLink()}
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={copyReferralLink}
+                      title="Copy to clipboard"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                    <Button onClick={shareReferralLink} className="flex-1">
+                      Share Referral Link
+                    </Button>
+                    <Button variant="outline" onClick={refreshReferrals} disabled={refreshing} className="flex gap-2 items-center">
+                      {refreshing ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                      Refresh
+                    </Button>
+                  </div>
                 </div>
-                <h3 className="font-semibold mb-1">Friend's Reward</h3>
-                <p className="text-2xl font-bold text-primary">10 Coins</p>
-              </div>
-            </div>
-            
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-3">Your Referral Link</h3>
-              <div className="flex space-x-2">
-                <Input 
-                  value={referralLink} 
-                  readOnly 
-                  className="font-mono text-sm"
-                />
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={copyReferralLink}
-                  title="Copy to clipboard"
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="mt-4">
-                <Button onClick={shareReferralLink} className="w-full">
-                  Share Referral Link
-                </Button>
               </div>
             </div>
             
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">How it works</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="flex flex-col items-center text-center p-4">
+                <div className="flex flex-col items-center text-center p-4 bg-primary/5 rounded-lg">
                   <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-3">
                     <span className="font-bold">1</span>
                   </div>
                   <p className="text-sm">Share your unique referral link with friends</p>
                 </div>
-                <div className="flex flex-col items-center text-center p-4">
+                <div className="flex flex-col items-center text-center p-4 bg-primary/5 rounded-lg">
                   <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-3">
                     <span className="font-bold">2</span>
                   </div>
                   <p className="text-sm">They sign up using your referral link</p>
                 </div>
-                <div className="flex flex-col items-center text-center p-4">
+                <div className="flex flex-col items-center text-center p-4 bg-primary/5 rounded-lg">
                   <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-3">
                     <span className="font-bold">3</span>
                   </div>
@@ -192,10 +238,20 @@ const ReferralSection = () => {
               <TabsContent value="referrals" className="p-6">
                 {referrals.length > 0 ? (
                   <div className="space-y-4">
-                    {referrals.map((referral) => (
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-medium">Recent Referrals</h3>
+                      <Button asChild variant="outline" size="sm">
+                        <RouterLink to="/referrals">
+                          View All
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </RouterLink>
+                      </Button>
+                    </div>
+                    
+                    {referrals.slice(0, 3).map((referral) => (
                       <div 
                         key={referral.id} 
-                        className="flex items-center justify-between p-4 bg-secondary/20 rounded-lg"
+                        className="flex items-center justify-between p-4 bg-secondary/20 rounded-lg hover:bg-secondary/30 transition-colors"
                       >
                         <div className="flex items-center">
                           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
@@ -215,6 +271,17 @@ const ReferralSection = () => {
                         </div>
                       </div>
                     ))}
+                    
+                    {referrals.length > 3 && (
+                      <div className="text-center mt-4">
+                        <Button asChild variant="outline">
+                          <RouterLink to="/referrals">
+                            View All Referrals
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </RouterLink>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8">
