@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import QrScanner from 'qr-scanner/qr-scanner.min.js';
+import QrScannerLib from 'qr-scanner/qr-scanner.min.js';
 
 interface QrScannerProps {
   onScan: (data: string) => void;
@@ -68,13 +68,13 @@ const QrScanner = ({ onScan }: QrScannerProps) => {
     const detectQRCode = async () => {
       try {
         // Import the QR code reader library dynamically
-        const { default: QrScanner } = await import('qr-scanner');
+        const { default: QrScannerModule } = await import('qr-scanner');
         
         const checkForQR = async () => {
           if (!videoRef.current || !scanning) return;
           
           try {
-            const result = await QrScanner.scanImage(videoRef.current);
+            const result = await QrScannerModule.scanImage(videoRef.current);
             if (result) {
               // Play a success sound
               const audio = new Audio('/beep.mp3');
