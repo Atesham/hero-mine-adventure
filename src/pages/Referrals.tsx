@@ -20,26 +20,42 @@ const ReferralsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [referralCode, setReferralCode] = useState('');
   const [referralLink, setReferralLink] = useState('');
+  const [error, setError] = useState<string | null>(null);
   
   const fetchReferrals = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      setError("You must be logged in to view referrals");
+      return;
+    }
     
     try {
       setLoading(true);
+      setError(null);
+      console.log("Fetching referrals for user:", user.uid);
+      
       const userReferrals = await getUserReferrals(user.uid);
       const referralStats = await getReferralStats(user.uid);
       const code = await getUserReferralCode(user.uid);
+      
+      console.log("Received code:", code);
+      console.log("Referrals:", userReferrals);
       
       setReferrals(userReferrals);
       setStats(referralStats);
       setReferralCode(code);
       
       if (code) {
-        setReferralLink(generateReferralLink(code));
+        const link = generateReferralLink(code);
+        console.log("Generated link:", link);
+        setReferralLink(link);
+      } else {
+        console.error("No referral code returned");
+        setError("Could not retrieve your referral code");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching referrals:', error);
-      toast.error('Could not load referrals');
+      setError(error.message || "Could not load referrals");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -124,6 +140,28 @@ const ReferralsPage = () => {
     link.click();
     document.body.removeChild(link);
   };
+  
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">
+        <Navbar />
+        <main className="flex-1 py-10">
+          <div className="container px-4 mx-auto">
+            <div className="text-center py-10">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100">
+                <Users className="w-8 h-8 text-red-500" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-red-500">{error}</h3>
+              <Button onClick={handleRefresh} className="mt-4">
+                Try Again
+              </Button>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">

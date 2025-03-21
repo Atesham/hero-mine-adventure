@@ -23,12 +23,18 @@ const ReferralSection = () => {
   const [loading, setLoading] = useState(true);
   const [referralLink, setReferralLink] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const fetchReferralData = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      setError("You must be logged in to see referral data");
+      return;
+    }
     
     try {
       setLoading(true);
+      setError(null);
       console.log('Fetching referral data for user:', user.uid);
       
       // Get user's referral code
@@ -36,7 +42,8 @@ const ReferralSection = () => {
       console.log('Retrieved referral code:', code);
       
       if (!code) {
-        toast.error('Could not get your referral code');
+        console.error("No referral code returned");
+        setError("Could not retrieve your referral code");
         return;
       }
       
@@ -53,14 +60,12 @@ const ReferralSection = () => {
       setReferrals(userReferrals);
       
       // Generate referral link
-      if (code) {
-        const link = generateReferralLink(code);
-        console.log('Generated referral link:', link);
-        setReferralLink(link);
-      }
-    } catch (error) {
+      const link = generateReferralLink(code);
+      console.log('Generated referral link:', link);
+      setReferralLink(link);
+    } catch (error: any) {
       console.error('Error fetching referral data:', error);
-      toast.error('Failed to load referral data');
+      setError(error.message || "Failed to load referral data");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -126,6 +131,20 @@ const ReferralSection = () => {
     );
   }
   
+  if (error) {
+    return (
+      <div className="text-center py-10">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100">
+          <Users className="w-8 h-8 text-red-500" />
+        </div>
+        <h3 className="mt-4 text-lg font-semibold text-red-500">{error}</h3>
+        <Button onClick={refreshReferrals} className="mt-4">
+          Try Again
+        </Button>
+      </div>
+    );
+  }
+  
   return (
     <section className="py-16 bg-gradient-to-br from-primary/5 to-secondary/10">
       <div className="container px-4 mx-auto">
@@ -174,6 +193,11 @@ const ReferralSection = () => {
                   <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                     <Link className="h-5 w-5 text-primary" />
                     Your Referral Link
+                    {referralData?.referralCode && (
+                      <span className="text-sm font-mono bg-primary/10 px-2 py-1 rounded">
+                        {referralData.referralCode}
+                      </span>
+                    )}
                   </h3>
                   <div className="flex space-x-2">
                     <Input 
@@ -202,6 +226,11 @@ const ReferralSection = () => {
                         <RefreshCw className="h-4 w-4" />
                       )}
                       Refresh
+                    </Button>
+                    <Button variant="secondary" asChild>
+                      <RouterLink to="/referrals">
+                        View All Referrals
+                      </RouterLink>
                     </Button>
                   </div>
                 </div>

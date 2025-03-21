@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   createUserWithEmailAndPassword, 
@@ -48,10 +47,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (user) {
         // Check if user document exists, if not create it
         try {
+          console.log("Auth state changed, user:", user.uid);
           const userRef = doc(db, 'users', user.uid);
           const userSnap = await getDoc(userRef);
           
           if (!userSnap.exists()) {
+            console.log("Creating new user document");
             // Create new user document with a referral code
             const referralCode = generateRandomReferralCode(user.displayName || user.email?.split('@')[0] || '');
             
@@ -66,6 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             console.log('Created new user with referral code:', referralCode);
           } else if (!userSnap.data().referralCode) {
+            console.log("Adding referral code to existing user");
             // If user exists but doesn't have a referral code, add one
             const referralCode = generateRandomReferralCode(user.displayName || user.email?.split('@')[0] || '');
             await updateDoc(userRef, {
