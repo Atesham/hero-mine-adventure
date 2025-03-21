@@ -1,25 +1,23 @@
 
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, Mail, Key, User, EyeIcon, EyeOffIcon } from 'lucide-react';
+import { Loader2, Mail, Key, User, EyeIcon, EyeOffIcon, Gift } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import Navbar from '@/components/layout/Navbar';
-
 
 const signupSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
+  referralCode: z.string().optional(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -30,26 +28,34 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 const Signup = () => {
   const { signup, loginWithGoogle, isGoogleAuthAvailable } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
-  const { register, handleSubmit, formState: { errors } } = useForm<SignupFormValues>({
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     mode: 'onBlur',
+    defaultValues: {
+      referralCode: '',
+    }
   });
+  
+  // Check for referral code in URL
+  useEffect(() => {
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      setValue('referralCode', refCode);
+      toast.info('Referral code applied!', {
+        description: 'You\'ll receive 10 coins when you sign up',
+      });
+    }
+  }, [searchParams, setValue]);
   
   const onSubmit = async (data: SignupFormValues) => {
     try {
       setLoading(true);
-      await signup(data.email, data.password, data.username);
-      
-      // Create initial wallet data
-      await setDoc(doc(db, 'walletData', data.email), {
-        balance: 0,
-        transactions: []
-      });
-      
+      await signup(data.email, data.password, data.username, data.referralCode);
       navigate('/');
     } catch (error: any) {
       toast.error('Sign up failed', {
@@ -75,7 +81,7 @@ const Signup = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-<div className="flex min-h-screen flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+      <div className="flex min-h-screen flex-1 flex-col justify-center px-6 py-12 lg:px-8">
         <div className="glass-card sm:mx-auto sm:w-full sm:max-w-md p-8 rounded-xl">
           <div className="mb-10 flex flex-col items-center">
             <Link to="/" className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
@@ -174,6 +180,22 @@ const Signup = () => {
               {errors.confirmPassword && (
                 <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="referralCode" className="flex items-center gap-1">
+                <Gift className="h-4 w-4" />
+                Referral Code (Optional)
+              </Label>
+              <Input
+                id="referralCode"
+                type="text"
+                placeholder="Enter referral code"
+                {...register('referralCode')}
+              />
+              <p className="text-xs text-muted-foreground">
+                Get 10 Hero Coins when you sign up with a referral code!
+              </p>
             </div>
 
             <Button

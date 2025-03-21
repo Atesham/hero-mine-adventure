@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   createUserWithEmailAndPassword, 
@@ -12,16 +11,17 @@ import {
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { toast } from 'sonner';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc, increment, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: FirebaseUser | null;
   loading: boolean;
-  signup: (email: string, password: string, displayName: string) => Promise<void>;
+  signup: (email: string, password: string, displayName: string, referralCode?: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   isGoogleAuthAvailable: boolean;
+  generateReferralCode: () => string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -57,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               coins: 0,
               totalMined: 0,
               createdAt: serverTimestamp(),
+              referralCode: generateReferralCode()
             });
           }
         } catch (error) {
@@ -70,23 +71,81 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return unsubscribe;
   }, []);
 
-  const signup = async (email: string, password: string, displayName: string) => {
+  const generateReferralCode = () => {
+    const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
+    return user ? 
+      `${user.displayName?.split(' ').map(name => name[0]).join('') || user.email?.substring(0, 2) || 'HC'}-${randomPart}` :
+      `HC-${randomPart}`;
+  };
+
+  const signup = async (email: string, password: string, displayName: string, referralCode?: string) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Update profile with display name
       if (userCredential.user) {
         await updateProfile(userCredential.user, { displayName });
         setUser({ ...userCredential.user, displayName });
         
-        // Create user document in Firestore
+        const userReferralCode = generateReferralCode();
         const userRef = doc(db, 'users', userCredential.user.uid);
+        
+        let initialCoins = 0;
+        
+        if (referralCode) {
+          const usersCollection = collection(db, 'users');
+          const referrerQuery = query(usersCollection, where('referralCode', '==', referralCode));
+          const referrerSnapshot = await getDocs(referrerQuery);
+          
+          if (!referrerSnapshot.empty) {
+            const referrerDoc = referrerSnapshot.docs[0];
+            const referrerId = referrerDoc.id;
+            
+            initialCoins = 10;
+            
+            const referrerRef = doc(db, 'users', referrerId);
+            await updateDoc(referrerRef, {
+              coins: increment(25)
+            });
+            
+            await addDoc(collection(db, 'transactions'), {
+              userId: referrerId,
+              type: 'reward',
+              amount: 25,
+              description: `Referral bonus for inviting ${displayName}`,
+              timestamp: serverTimestamp(),
+              counterpartyName: displayName
+            });
+            
+            await addDoc(collection(db, 'transactions'), {
+              userId: userCredential.user.uid,
+              type: 'reward',
+              amount: 10,
+              description: 'Welcome bonus for joining via referral',
+              timestamp: serverTimestamp()
+            });
+            
+            await addDoc(collection(db, 'referrals'), {
+              referrerId: referrerId,
+              referredId: userCredential.user.uid,
+              referredName: displayName,
+              referrerName: referrerDoc.data().displayName,
+              timestamp: serverTimestamp(),
+              status: 'completed'
+            });
+            
+            toast.success('Referral bonus applied!');
+          } else {
+            toast.error('Invalid referral code');
+          }
+        }
+        
         await setDoc(userRef, {
           displayName,
           email,
-          coins: 0,
+          coins: initialCoins,
           totalMined: 0,
           createdAt: serverTimestamp(),
+          referralCode: userReferralCode
         });
         
         toast.success('Account created successfully!');
@@ -94,7 +153,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error('Signup error:', error);
       
-      // Handle specific Firebase errors with user-friendly messages
       if (error.code === 'auth/email-already-in-use') {
         throw new Error('This email is already in use. Please try a different one.');
       } else if (error.code === 'auth/invalid-email') {
@@ -114,7 +172,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error('Login error:', error);
       
-      // Handle specific Firebase errors with user-friendly messages
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         throw new Error('Invalid email or password. Please try again.');
       } else if (error.code === 'auth/too-many-requests') {
@@ -133,7 +190,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error('Google login error:', error);
       
-      // Handle unauthorized domain error specifically
       if (error.code === 'auth/unauthorized-domain') {
         setIsGoogleAuthAvailable(false);
         toast.error('Google login is not available in this environment', {
@@ -164,7 +220,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     loginWithGoogle,
     logout,
-    isGoogleAuthAvailable
+    isGoogleAuthAvailable,
+    generateReferralCode
   };
 
   return (
