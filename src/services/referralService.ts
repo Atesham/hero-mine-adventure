@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, query, where, orderBy, getDocs, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { toast } from 'sonner';
 
 export interface Referral {
@@ -61,11 +61,25 @@ export const generateReferralLink = (referralCode: string): string => {
 // Get user's referral code
 export const getUserReferralCode = async (userId: string): Promise<string> => {
   try {
+    if (!userId) {
+      console.error('No user ID provided');
+      return '';
+    }
+
     const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
     
     if (userDoc.exists()) {
-      return userDoc.data().referralCode || '';
+      const userData = userDoc.data();
+      
+      // If user doesn't have a referral code yet, generate and save one
+      if (!userData.referralCode) {
+        const newCode = generateRandomReferralCode(userData.displayName || '');
+        await updateDoc(userRef, { referralCode: newCode });
+        return newCode;
+      }
+      
+      return userData.referralCode || '';
     }
     return '';
   } catch (error) {
@@ -73,6 +87,16 @@ export const getUserReferralCode = async (userId: string): Promise<string> => {
     toast.error('Could not load referral code');
     throw error;
   }
+};
+
+// Generate a random referral code
+export const generateRandomReferralCode = (displayName: string): string => {
+  const namePrefix = displayName.split(' ')
+    .map(name => name[0])
+    .join('')
+    .toUpperCase() || 'HC';
+  const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
+  return `${namePrefix}-${randomPart}`;
 };
 
 // Get total referral stats

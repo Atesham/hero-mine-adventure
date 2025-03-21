@@ -29,8 +29,11 @@ const ReferralSection = () => {
     
     try {
       setLoading(true);
+      console.log('Fetching referral data for user:', user.uid);
+      
       // Get user's referral code
       const code = await getUserReferralCode(user.uid);
+      console.log('Retrieved referral code:', code);
       
       if (!code) {
         toast.error('Could not get your referral code');
@@ -52,6 +55,7 @@ const ReferralSection = () => {
       // Generate referral link
       if (code) {
         const link = generateReferralLink(code);
+        console.log('Generated referral link:', link);
         setReferralLink(link);
       }
     } catch (error) {

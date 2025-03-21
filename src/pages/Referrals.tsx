@@ -4,11 +4,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { toast } from 'sonner';
-import { getUserReferrals, getReferralStats } from '@/services/referralService';
+import { getUserReferrals, getReferralStats, generateReferralLink, getUserReferralCode } from '@/services/referralService';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, Award, RefreshCw, Download, Search } from 'lucide-react';
+import { Users, Award, RefreshCw, Download, Search, Copy, Share, Link as LinkIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 
 const ReferralsPage = () => {
   const { user } = useAuth();
@@ -17,6 +18,8 @@ const ReferralsPage = () => {
   const [referrals, setReferrals] = useState<any[]>([]);
   const [stats, setStats] = useState({ total: 0, totalRewards: 0 });
   const [searchTerm, setSearchTerm] = useState('');
+  const [referralCode, setReferralCode] = useState('');
+  const [referralLink, setReferralLink] = useState('');
   
   const fetchReferrals = async () => {
     if (!user) return;
@@ -25,9 +28,15 @@ const ReferralsPage = () => {
       setLoading(true);
       const userReferrals = await getUserReferrals(user.uid);
       const referralStats = await getReferralStats(user.uid);
+      const code = await getUserReferralCode(user.uid);
       
       setReferrals(userReferrals);
       setStats(referralStats);
+      setReferralCode(code);
+      
+      if (code) {
+        setReferralLink(generateReferralLink(code));
+      }
     } catch (error) {
       console.error('Error fetching referrals:', error);
       toast.error('Could not load referrals');
@@ -49,6 +58,45 @@ const ReferralsPage = () => {
   const filteredReferrals = referrals.filter(ref => 
     ref.referredName.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  const copyReferralLink = () => {
+    if (!referralLink) {
+      toast.error('No referral link to copy');
+      return;
+    }
+    
+    navigator.clipboard.writeText(referralLink)
+      .then(() => {
+        toast.success('Referral link copied to clipboard!');
+      })
+      .catch((err) => {
+        console.error('Failed to copy:', err);
+        toast.error('Failed to copy referral link');
+      });
+  };
+  
+  const shareReferralLink = async () => {
+    if (!referralLink) {
+      toast.error('No referral link to share');
+      return;
+    }
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Join Hero Coin',
+          text: 'Sign up for Hero Coin using my referral link and get 10 free coins!',
+          url: referralLink
+        });
+        toast.success('Referral link shared successfully!');
+      } catch (error) {
+        console.error('Error sharing:', error);
+        copyReferralLink();
+      }
+    } else {
+      copyReferralLink();
+    }
+  };
   
   const exportToCsv = () => {
     if (!referrals.length) return;
@@ -88,6 +136,48 @@ const ReferralsPage = () => {
               Track all your referrals and rewards in one place
             </p>
           </div>
+          
+          <Card className="mb-8">
+            <CardHeader className="pb-4">
+              <CardTitle>Your Referral Link</CardTitle>
+              <CardDescription>Share this link with friends to earn bonus coins</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col space-y-4">
+                <div className="flex space-x-2">
+                  <Input 
+                    value={referralLink} 
+                    readOnly 
+                    className="font-mono text-sm"
+                    onClick={() => copyReferralLink()}
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={copyReferralLink}
+                    title="Copy to clipboard"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  {navigator.share && (
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={shareReferralLink}
+                      title="Share link"
+                    >
+                      <Share className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <LinkIcon className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Referral Code: <span className="font-mono">{referralCode}</span></span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="glass-card rounded-xl p-6 flex items-center">

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   createUserWithEmailAndPassword, 
@@ -12,6 +13,7 @@ import {
 import { auth, db } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, increment, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { generateRandomReferralCode } from '@/services/referralService';
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -50,15 +52,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userSnap = await getDoc(userRef);
           
           if (!userSnap.exists()) {
-            // Create new user document
+            // Create new user document with a referral code
+            const referralCode = generateRandomReferralCode(user.displayName || user.email?.split('@')[0] || '');
+            
             await setDoc(userRef, {
               displayName: user.displayName || user.email?.split('@')[0],
               email: user.email,
               coins: 0,
               totalMined: 0,
               createdAt: serverTimestamp(),
-              referralCode: generateReferralCode()
+              referralCode: referralCode
             });
+            
+            console.log('Created new user with referral code:', referralCode);
+          } else if (!userSnap.data().referralCode) {
+            // If user exists but doesn't have a referral code, add one
+            const referralCode = generateRandomReferralCode(user.displayName || user.email?.split('@')[0] || '');
+            await updateDoc(userRef, {
+              referralCode: referralCode
+            });
+            console.log('Added referral code to existing user:', referralCode);
           }
         } catch (error) {
           console.error("Error checking/creating user document:", error);
@@ -72,10 +85,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const generateReferralCode = () => {
-    const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return user ? 
-      `${user.displayName?.split(' ').map(name => name[0]).join('') || user.email?.substring(0, 2) || 'HC'}-${randomPart}` :
-      `HC-${randomPart}`;
+    return generateRandomReferralCode(
+      user ? (user.displayName || user.email?.split('@')[0] || '') : ''
+    );
   };
 
   const signup = async (email: string, password: string, displayName: string, referralCode?: string) => {
@@ -86,7 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await updateProfile(userCredential.user, { displayName });
         setUser({ ...userCredential.user, displayName });
         
-        const userReferralCode = generateReferralCode();
+        const userReferralCode = generateRandomReferralCode(displayName);
         const userRef = doc(db, 'users', userCredential.user.uid);
         
         let initialCoins = 0;
@@ -130,7 +142,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               referredName: displayName,
               referrerName: referrerDoc.data().displayName,
               timestamp: serverTimestamp(),
-              status: 'completed'
+              status: 'completed',
+              rewardAmount: 25
             });
             
             toast.success('Referral bonus applied!');
