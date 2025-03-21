@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import QrScanner from 'qr-scanner/qr-scanner.min.js';
 
 interface QrScannerProps {
   onScan: (data: string) => void;

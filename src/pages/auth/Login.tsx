@@ -122,7 +122,6 @@ const Login = () => {
             
             {isGoogleAuthAvailable ? (
               <div className="mt-6">
-              
               <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={loading}>
   {loading ? (
     <>

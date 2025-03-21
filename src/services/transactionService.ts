@@ -16,32 +16,90 @@ export interface Transaction {
 }
 
 // Get user wallet data including balance and transactions
+// export const getUserWalletData = async (userId: string) => {
+//   try {
+//     // Get user data
+//     const userRef = doc(db, 'users', userId);
+//     const userDoc = await getDoc(userRef);
+    
+//     if (!userDoc.exists()) {
+//       throw new Error('User not found');
+//     }
+    
+//     const userData = userDoc.data();
+    
+//     // Get recent transactions
+//     const transactionsQuery = query(
+//       collection(db, 'transactions'),
+//       where('userId', '==', userId),
+//       orderBy('timestamp', 'desc'),
+//       limit(10)
+//     );
+    
+//     const transactionsSnapshot = await getDocs(transactionsQuery);
+//     const transactions: Transaction[] = [];
+    
+//     transactionsSnapshot.forEach((doc) => {
+//       const data = doc.data();
+//       transactions.push({
+//         id: doc.id,
+//         type: data.type,
+//         amount: data.amount,
+//         timestamp: data.timestamp?.toDate() || new Date(),
+//         description: data.description,
+//         userId: data.userId,
+//         counterpartyId: data.counterpartyId,
+//         counterpartyName: data.counterpartyName,
+//         counterpartyAddress: data.counterpartyAddress
+//       });
+//     });
+    
+//     return {
+//       balance: userData.coins || 0,
+//       totalMined: userData.totalMined || 0,
+//       walletAddress: `HC-${userId.substring(0, 12).toUpperCase()}`,
+//       transactions
+//     };
+//   } catch (error) {
+//     console.error('Error fetching wallet data:', error);
+//     throw error;
+//   }
+// };
+
+
 export const getUserWalletData = async (userId: string) => {
   try {
-    // Get user data
+    console.log("Getting user wallet data for:", userId);
+    
+    // Fetch user document
     const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
     
     if (!userDoc.exists()) {
-      throw new Error('User not found');
+      console.error("User document not found.");
+      throw new Error("User not found");
     }
     
     const userData = userDoc.data();
-    
-    // Get recent transactions
+    console.log("User Data:", userData);
+
+    // Fetch transactions
     const transactionsQuery = query(
       collection(db, 'transactions'),
       where('userId', '==', userId),
       orderBy('timestamp', 'desc'),
       limit(10)
     );
-    
+
+    console.log("Transactions Query:", transactionsQuery);
+
     const transactionsSnapshot = await getDocs(transactionsQuery);
-    const transactions: Transaction[] = [];
-    
-    transactionsSnapshot.forEach((doc) => {
+    console.log("Transactions Snapshot:", transactionsSnapshot);
+
+    const transactions: Transaction[] = transactionsSnapshot.docs.map((doc) => {
       const data = doc.data();
-      transactions.push({
+      console.log("Transaction Data:", data); // Log each transaction document
+      return {
         id: doc.id,
         type: data.type,
         amount: data.amount,
@@ -50,21 +108,24 @@ export const getUserWalletData = async (userId: string) => {
         userId: data.userId,
         counterpartyId: data.counterpartyId,
         counterpartyName: data.counterpartyName,
-        counterpartyAddress: data.counterpartyAddress
-      });
+        counterpartyAddress: data.counterpartyAddress,
+      };
     });
-    
+
+    console.log("Parsed Transactions:", transactions);
+
     return {
       balance: userData.coins || 0,
       totalMined: userData.totalMined || 0,
       walletAddress: `HC-${userId.substring(0, 12).toUpperCase()}`,
-      transactions
+      transactions,
     };
   } catch (error) {
-    console.error('Error fetching wallet data:', error);
+    console.error("Error fetching wallet data:", error);
     throw error;
   }
 };
+
 
 // Send coins to another user
 export const sendCoins = async (
@@ -178,12 +239,49 @@ export const sendCoins = async (
 };
 
 // Get top miners for leaderboard
-export const getTopMiners = async (limit = 20) => {
+// export const getTopMiners = async (limit = 20) => {
+//   try {
+//     const usersQuery = query(
+//       collection(db, 'users'),
+//       orderBy('coins', 'desc'),
+//       limit(limit)
+//     );
+    
+//     const snapshot = await getDocs(usersQuery);
+//     const miners = snapshot.docs.map((doc, index) => {
+//       const data = doc.data();
+      
+//       // Determine level based on coins
+//       let level = 'Bronze';
+//       if (data.coins >= 10000) level = 'Diamond';
+//       else if (data.coins >= 7500) level = 'Platinum';
+//       else if (data.coins >= 5000) level = 'Gold';
+//       else if (data.coins >= 2500) level = 'Silver';
+      
+//       return {
+//         id: doc.id,
+//         name: data.displayName || 'Anonymous Miner',
+//         coins: data.coins || 0,
+//         level,
+//         rank: index + 1
+//       };
+//     });
+    
+//     return miners;
+//   } catch (error) {
+//     console.error('Error fetching top miners:', error);
+//     throw error;
+//   }
+// };
+
+
+// Get top miners for leaderboard
+export const getTopMiners = async (maxLimit = 20) => {
   try {
     const usersQuery = query(
       collection(db, 'users'),
       orderBy('coins', 'desc'),
-      limit(limit)
+      limit(maxLimit) // Use renamed parameter
     );
     
     const snapshot = await getDocs(usersQuery);

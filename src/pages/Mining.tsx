@@ -73,3 +73,5 @@ const Mining = () => {
 };
 
 export default Mining;
+
+
