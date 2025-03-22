@@ -14,7 +14,10 @@ admin.initializeApp({
 
 const db = admin.firestore();
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:8080', // Replace with your frontend URL
+  credentials: true,
+}));
 app.use(bodyParser.json());
 
 // Nodemailer configuration
@@ -32,10 +35,12 @@ const generateOTP = () => Math.floor(100000 + Math.random() * 900000);
 // Check if email is already registered
 const checkIfEmailExists = async (email) => {
   try {
+    console.log("Fetching user from Firebase:", email);
     await admin.auth().getUserByEmail(email);
     return true; // Email is already registered
   } catch (error) {
     if (error.code === 'auth/user-not-found') {
+      console.log("Email is not registered:", email);
       return false; // Email is not registered
     }
     console.error('Error checking email in Firebase:', error);
@@ -46,6 +51,7 @@ const checkIfEmailExists = async (email) => {
 // Store OTP in Firestore
 const storeOTP = async (email, otp) => {
   try {
+    console.log("Storing OTP in Firestore:", email, otp);
     await db.collection('otps').doc(email).set({
       otp: otp.toString(),
       timestamp: Date.now(),
@@ -54,7 +60,6 @@ const storeOTP = async (email, otp) => {
     console.error('Error storing OTP in Firestore:', error.message);
   }
 };
-
 // Send OTP via email
 const sendOTP = async (email, otp) => {
   const mailOptions = {
@@ -65,6 +70,7 @@ const sendOTP = async (email, otp) => {
   };
 
   try {
+    console.log("Sending OTP via email:", email, otp);
     await transporter.sendMail(mailOptions);
     return true;
   } catch (error) {
@@ -73,32 +79,49 @@ const sendOTP = async (email, otp) => {
   }
 };
 
-// Endpoint to send OTP
+
 app.post('/api/send-otp', async (req, res) => {
   const { email } = req.body;
 
+  console.log("Received request body:", req.body); // Log the request body
+
+  if (!email) {
+    console.log("Email is missing in the request body.");
+    return res.status(400).json({ success: false, message: 'Email is required.' });
+  }
+
   try {
-    // Check if the email is already registered
+    console.log("Checking if email exists in Firebase:", email);
     const emailExists = await checkIfEmailExists(email);
     if (emailExists) {
-      return res.status(400).json({ success: false, message: 'Email is already registered. Please log in.' });
+      console.log("Email is already registered:", email);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'This email is already registered. Please log in.', 
+      });
     }
 
-    // Generate and send OTP only if email is NOT registered
+    console.log("Generating OTP for email:", email);
     const otp = generateOTP();
+    console.log("Storing OTP in Firestore:", otp);
     await storeOTP(email, otp);
+
+    console.log("Sending OTP via email:", otp);
     const isSent = await sendOTP(email, otp);
 
     if (isSent) {
-      return res.json({ success: true, message: 'OTP sent successfully.' });
+      console.log("OTP sent successfully.");
+      res.json({ success: true, message: 'OTP sent successfully.' });
     } else {
-      return res.status(500).json({ success: false, message: 'Failed to send OTP.' });
+      console.log("Failed to send OTP.");
+      res.status(500).json({ success: false, message: 'Failed to send OTP.' });
     }
   } catch (error) {
     console.error('Error in /api/send-otp:', error.message);
-    return res.status(500).json({ success: false, message: 'Internal server error.' });
+    res.status(500).json({ success: false, message: 'Internal server error.' });
   }
 });
+
 
 // Endpoint to verify OTP
 app.post('/api/verify-otp', async (req, res) => {
@@ -133,3 +156,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
