@@ -160,7 +160,7 @@ const Login = () => {
         </Container>
       </main>
       
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 };
