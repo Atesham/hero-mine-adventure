@@ -24,41 +24,41 @@ const ReferralSection = () => {
   const [referralLink, setReferralLink] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const fetchReferralData = async () => {
     if (!user) {
       setLoading(false);
       setError("You must be logged in to see referral data");
       return;
     }
-    
+
     try {
       setLoading(true);
       setError(null);
       console.log('Fetching referral data for user:', user.uid);
-      
+
       // Get user's referral code
       const code = await getUserReferralCode(user.uid);
       console.log('Retrieved referral code:', code);
-      
+
       if (!code) {
         console.error("No referral code returned");
         setError("Could not retrieve your referral code");
         return;
       }
-      
+
       // Get user's referrals
       const userReferrals = await getUserReferrals(user.uid);
       const stats = await getReferralStats(user.uid);
-      
+
       setReferralData({
         referralCode: code,
         totalReferrals: stats.total,
         totalRewards: stats.totalRewards
       });
-      
+
       setReferrals(userReferrals);
-      
+
       // Generate referral link
       const link = generateReferralLink(code);
       console.log('Generated referral link:', link);
@@ -71,22 +71,22 @@ const ReferralSection = () => {
       setRefreshing(false);
     }
   };
-  
+
   useEffect(() => {
     fetchReferralData();
   }, [user]);
-  
+
   const refreshReferrals = () => {
     setRefreshing(true);
     fetchReferralData();
   };
-  
+
   const copyReferralLink = () => {
     if (!referralLink) {
       toast.error('No referral link to copy');
       return;
     }
-    
+
     navigator.clipboard.writeText(referralLink)
       .then(() => {
         toast.success('Referral link copied to clipboard!');
@@ -96,13 +96,13 @@ const ReferralSection = () => {
         toast.error('Failed to copy referral link');
       });
   };
-  
+
   const shareReferralLink = async () => {
     if (!referralLink) {
       toast.error('No referral link to share');
       return;
     }
-    
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -119,7 +119,7 @@ const ReferralSection = () => {
       copyReferralLink();
     }
   };
-  
+
   if (loading) {
     return (
       <div className="text-center py-10">
@@ -130,7 +130,7 @@ const ReferralSection = () => {
       </div>
     );
   }
-  
+
   if (error) {
     return (
       <div className="text-center py-10">
@@ -144,7 +144,7 @@ const ReferralSection = () => {
       </div>
     );
   }
-  
+
   return (
     <section className="py-16 bg-gradient-to-br from-primary/5 to-secondary/10">
       <div className="container px-4 mx-auto">
@@ -154,14 +154,41 @@ const ReferralSection = () => {
             Invite your friends to join Hero Coin and both of you will earn bonus coins. You get 25 coins for each friend who joins!
           </p>
         </div>
-        
+
         <div className="max-w-4xl mx-auto">
           <div className="glass-card rounded-xl p-6 md:p-8 mb-8">
             <div className="flex flex-col md:flex-row items-center gap-6 mb-8">
               <div className="md:w-1/3">
-                <img src={inviteImage} alt="Invite friends" className="w-full max-w-[240px] mx-auto hover-scale" />
+
+
+
+<div className="relative w-full max-w-[240px] mx-auto">
+  {/* Outer Glow Effect - Crypto Themed */}
+  <div className="absolute inset-0 rounded-full bg-gradient-to-r 
+                  from-blue-500 via-indigo-600 to-purple-700 
+                  blur-xl opacity-40"></div>
+
+  {/* Dynamic Light Waves (Subtle Pulsing Effect) */}
+  <div className="absolute inset-0 rounded-full opacity-30 
+                  bg-radial-gradient(circle, rgba(0, 150, 255, 0.3) 15%, 
+                  rgba(110, 80, 255, 0.15) 50%, 
+                  transparent 80%) animate-pulse"></div>
+
+  {/* Invite Image with Premium Styling */}
+  <img
+    src={inviteImage}
+    alt="Invite Friends & Earn Rewards"
+    className="relative w-full rounded-full border-2 border-blue-400 
+               shadow-md shadow-indigo-500 p-2 bg-black/50 
+               transition-transform transform hover:scale-105"
+  />
+</div>
+
+
+
+
               </div>
-              
+
               <div className="md:w-2/3 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="text-center p-4 rounded-lg bg-primary/5">
@@ -171,7 +198,7 @@ const ReferralSection = () => {
                     <h3 className="font-semibold mb-1">Your Reward</h3>
                     <p className="text-2xl font-bold text-primary">25 Coins</p>
                   </div>
-                  
+
                   <div className="text-center p-4 rounded-lg bg-primary/5">
                     <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
                       <UserPlus className="w-6 h-6 text-primary" />
@@ -179,7 +206,7 @@ const ReferralSection = () => {
                     <h3 className="font-semibold mb-1">Total Referrals</h3>
                     <p className="text-2xl font-bold text-primary">{referralData?.totalReferrals || 0}</p>
                   </div>
-                  
+
                   <div className="text-center p-4 rounded-lg bg-primary/5">
                     <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Award className="w-6 h-6 text-primary" />
@@ -188,7 +215,7 @@ const ReferralSection = () => {
                     <p className="text-2xl font-bold text-primary">10 Coins</p>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                     <Link className="h-5 w-5 text-primary" />
@@ -200,15 +227,15 @@ const ReferralSection = () => {
                     )}
                   </h3>
                   <div className="flex space-x-2">
-                    <Input 
-                      value={referralLink} 
-                      readOnly 
+                    <Input
+                      value={referralLink}
+                      readOnly
                       className="font-mono text-sm"
                       onClick={() => copyReferralLink()}
                     />
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
+                    <Button
+                      variant="outline"
+                      size="icon"
                       onClick={copyReferralLink}
                       title="Copy to clipboard"
                     >
@@ -236,7 +263,7 @@ const ReferralSection = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">How it works</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -261,13 +288,13 @@ const ReferralSection = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="glass-card rounded-xl overflow-hidden">
             <Tabs defaultValue="referrals">
               <TabsList className="w-full">
                 <TabsTrigger value="referrals" className="flex-1">Your Referrals</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="referrals" className="p-6">
                 {referrals.length > 0 ? (
                   <div className="space-y-4">
@@ -280,10 +307,10 @@ const ReferralSection = () => {
                         </RouterLink>
                       </Button>
                     </div>
-                    
+
                     {referrals.slice(0, 3).map((referral) => (
-                      <div 
-                        key={referral.id} 
+                      <div
+                        key={referral.id}
                         className="flex items-center justify-between p-4 bg-secondary/20 rounded-lg hover:bg-secondary/30 transition-colors"
                       >
                         <div className="flex items-center">
@@ -304,7 +331,7 @@ const ReferralSection = () => {
                         </div>
                       </div>
                     ))}
-                    
+
                     {referrals.length > 3 && (
                       <div className="text-center mt-4">
                         <Button asChild variant="outline">

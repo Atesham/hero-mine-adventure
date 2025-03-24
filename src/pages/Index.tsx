@@ -1,5 +1,3 @@
-
-import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Zap, Shield, Users, Clock, Globe, BarChart, Gift } from "lucide-react";
@@ -24,14 +22,14 @@ const Index = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1 }}
+              transition={{ duration: 0.5 }}
               className="flex-1 text-center md:text-left"
             >
               <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900 dark:text-white">
                 Mine Hero Coins & Build Your Digital Wealth
               </h1>
               <p className="text-lg text-gray-700 dark:text-gray-300 mb-6">
-                Hero Coin is a <strong>revolutionary cryptocurrency</strong> that lets you mine coins with just a few taps—no expensive hardware, no complicated setups. Simply <strong>watch ads and earn</strong>!
+                Hero Coin is a <strong>revolutionary cryptocurrency</strong> that lets you mine coins with just a few taps—no expensive hardware, no complicated setups. Simply <strong>Mine the coins and earn</strong>!
               </p>
               <Button asChild size="lg" className="rounded-full bg-primary hover:bg-primary/80">
                 <Link to="/mining">Start Mining Now<ArrowRight className="ml-2 h-5 w-5" /></Link>
@@ -40,10 +38,24 @@ const Index = () => {
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 1 }}
+              transition={{ duration: 0.5 }}
+              whileHover={{ y: [0, -10, 0], transition: { duration: 1, repeat: Infinity } }} // Floating effect
               className="flex-1"
             >
-              <img src={HeroImage} alt="Hero Mining" className="w-full max-w-md mx-auto" />
+              <div className="relative w-full max-w-md mx-auto">
+                {/* Glowing Animated Border */}
+                <div className="absolute inset-0 animate-pulse rounded-full 
+                                bg-gradient-to-r from-cyan-400 via-indigo-500 to-purple-600 
+                                blur-xl opacity-80"></div>
+
+                {/* Main Image */}
+                <img
+                  src={HeroImage}
+                  alt="Hero Mining"
+                  className="relative w-full rounded-full border-4 border-indigo-500 
+                             shadow-2xl shadow-purple-800 p-2 bg-black/30"
+                />
+              </div>
             </motion.div>
           </Container>
         </section>
@@ -54,7 +66,7 @@ const Index = () => {
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1 }}
+              transition={{ duration: 0.5 }}
               className="text-3xl md:text-4xl font-bold text-center mb-12 text-gray-900 dark:text-white"
             >
               Why Choose Hero Coin?
@@ -64,11 +76,11 @@ const Index = () => {
               <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 1, delay: 0.2 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
                 className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg text-center hover:shadow-xl transition-shadow"
               >
                 <motion.div
-                  whileHover={{ scale: 1.1 }}
+                  whileHover={{ scale: 1.1, boxShadow: "0 0 20px rgba(59, 130, 246, 0.8)" }} // Neon glow on hover
                   className="w-24 h-24 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center"
                 >
                   <Zap className="w-12 h-12 text-primary" />
@@ -81,11 +93,11 @@ const Index = () => {
               <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1, delay: 0.4 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
                 className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg text-center hover:shadow-xl transition-shadow"
               >
                 <motion.div
-                  whileHover={{ scale: 1.1 }}
+                  whileHover={{ scale: 1.1, boxShadow: "0 0 20px rgba(59, 130, 246, 0.8)" }} // Neon glow on hover
                   className="w-24 h-24 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center"
                 >
                   <Shield className="w-12 h-12 text-primary" />
@@ -98,11 +110,11 @@ const Index = () => {
               <motion.div
                 initial={{ opacity: 0, x: 50 }}
                 whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 1, delay: 0.6 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
                 className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg text-center hover:shadow-xl transition-shadow"
               >
                 <motion.div
-                  whileHover={{ scale: 1.1 }}
+                  whileHover={{ scale: 1.1, boxShadow: "0 0 20px rgba(59, 130, 246, 0.8)" }} // Neon glow on hover
                   className="w-24 h-24 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center"
                 >
                   <Users className="w-12 h-12 text-primary" />
@@ -123,7 +135,7 @@ const Index = () => {
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1 }}
+              transition={{ duration: 0.5 }}
               className="text-3xl md:text-4xl font-bold text-center mb-12 text-gray-900 dark:text-white"
             >
               How It Works
@@ -133,11 +145,11 @@ const Index = () => {
               <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1, delay: 0.2 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
                 className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg shadow-lg text-center hover:shadow-xl transition-shadow"
               >
                 <motion.div
-                  whileHover={{ scale: 1.1 }}
+                  whileHover={{ scale: 1.1, boxShadow: "0 0 20px rgba(59, 130, 246, 0.8)" }} // Neon glow on hover
                   className="w-24 h-24 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center"
                 >
                   <Clock className="w-12 h-12 text-primary" />
@@ -150,11 +162,11 @@ const Index = () => {
               <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1, delay: 0.4 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
                 className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg shadow-lg text-center hover:shadow-xl transition-shadow"
               >
                 <motion.div
-                  whileHover={{ scale: 1.1 }}
+                  whileHover={{ scale: 1.1, boxShadow: "0 0 20px rgba(59, 130, 246, 0.8)" }} // Neon glow on hover
                   className="w-24 h-24 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center"
                 >
                   <Globe className="w-12 h-12 text-primary" />
@@ -167,11 +179,11 @@ const Index = () => {
               <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1, delay: 0.6 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
                 className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg shadow-lg text-center hover:shadow-xl transition-shadow"
               >
                 <motion.div
-                  whileHover={{ scale: 1.1 }}
+                  whileHover={{ scale: 1.1, boxShadow: "0 0 20px rgba(59, 130, 246, 0.8)" }} // Neon glow on hover
                   className="w-24 h-24 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center"
                 >
                   <Gift className="w-12 h-12 text-primary" />
@@ -189,7 +201,7 @@ const Index = () => {
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1 }}
+              transition={{ duration: 0.5 }}
               className="text-3xl md:text-4xl font-bold mb-6 text-gray-900 dark:text-white"
             >
               Join the Movement & Invite Friends
@@ -197,7 +209,7 @@ const Index = () => {
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.2 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
               className="text-lg text-gray-700 dark:text-gray-300 mb-6"
             >
               Join thousands of users already mining Hero Coins and invite your friends to earn bonuses together!
@@ -205,7 +217,10 @@ const Index = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.4 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              animate={{ scale: [1, 1.05, 1], transition: { duration: 1, repeat: Infinity } }} // Pulse effect
               className="flex flex-col sm:flex-row justify-center gap-4"
             >
               {user ? (

@@ -1,5 +1,3 @@
-
-import React from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import MiningCard from '@/components/mining/MiningCard';
@@ -14,14 +12,11 @@ const Mining = () => {
       <main className="flex-1 pt-32 pb-16">
         <Container>
           <div className="text-center max-w-2xl mx-auto mb-10">
-            <div className="inline-flex items-center rounded-full px-3 py-1 text-sm bg-primary/10 text-primary mb-4">
-              <span className="animate-pulse-soft mr-1">●</span> Mining Rewards
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">
+                        <h1 className="text-3xl md:text-4xl font-bold mb-4">
               Mine Hero Coins
             </h1>
             <p className="text-lg text-muted-foreground">
-              Watch ads every 12 hours to earn Hero Coins that are automatically added to your wallet.
+              Mine the coins every 12 hours to earn Hero Coins that are automatically added to your wallet.
             </p>
           </div>
           

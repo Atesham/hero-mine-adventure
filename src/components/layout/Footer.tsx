@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -71,11 +70,6 @@ const Footer = () => {
               <li>
                 <Link to="/careers" className="text-muted-foreground hover:text-foreground transition-colors">
                   Careers
-                </Link>
-              </li>
-              <li>
-                <Link to="/blog" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Blog
                 </Link>
               </li>
               <li>
