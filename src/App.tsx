@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
@@ -14,6 +15,7 @@ import Wallet from "./pages/Wallet";
 import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 import Referrals from "./pages/Referrals";
+import Profile from "./pages/Profile"; // We'll create this file
 import Careers from "./components/layout/careers";
 import Contact from "./components/layout/contact";
 import Privacy from "./components/layout/privacy";
@@ -21,6 +23,7 @@ import Terms from "./components/layout/terms";
 import Cookies from "./components/layout/cookies";
 import About from "./components/layout/about";
 import BackButton from "./components/BackButton"; // Import Back Button
+import MobileNavbar from "./components/layout/MobileNavbar"; // Import Mobile Navbar
 
 // 📌 Scroll Manager - Saves & Restores Scroll Position
 const ScrollManager = () => {
@@ -74,6 +77,7 @@ function App() {
               <Route path="/wallet" element={<Wallet />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/referrals" element={<Referrals />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="/careers" element={<Careers />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
@@ -82,6 +86,7 @@ function App() {
               <Route path="/cookies" element={<Cookies />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <MobileNavbar /> {/* Add Mobile Bottom Navigation */}
           </Router>
           <Toaster position="top-right" richColors closeButton />
         </AuthProvider>

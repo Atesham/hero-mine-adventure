@@ -1,10 +1,13 @@
+
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react"; // Back Icon
 import { useEffect } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const BackButton = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     // Save scroll position before navigating away
@@ -28,11 +31,10 @@ const BackButton = () => {
       }, 100);
     }
   };
-  // if (location.pathname === "/") return null;
 
     // Hide back button on specific routes
-    const hiddenRoutes = ["/", "/mining", "/wallet", "/leaderboard"];
-    if (hiddenRoutes.includes(location.pathname)) return null;
+    const hiddenRoutes = ["/", "/mining", "/wallet", "/leaderboard", "/referrals"];
+    if (hiddenRoutes.includes(location.pathname) || (isMobile && location.pathname === "/referrals")) return null;
     
   return (
     <button
@@ -44,5 +46,5 @@ const BackButton = () => {
     </button>
   );
 };
-
+  
 export default BackButton;

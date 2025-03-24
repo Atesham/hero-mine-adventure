@@ -12,7 +12,7 @@ import {
 import { auth, db } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, increment, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
-import { generateRandomReferralCode } from '@/services/referralService';
+import { generateRandomReferralCode } from '@/referralService';
 
 interface AuthContextType {
   user: FirebaseUser | null;

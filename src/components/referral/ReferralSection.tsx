@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Users, Copy, Gift, UserPlus, ArrowRight, Link, Award, RefreshCw } from 'lucide-react';
-import { getUserReferrals, generateReferralLink, getUserReferralCode, getReferralStats } from '@/services/referralService';
+import { getUserReferrals, generateReferralLink, getUserReferralCode, getReferralStats } from '@/referralService';
 import { Link as RouterLink } from 'react-router-dom';
 import inviteImage from '@/assets/invite.png';
 

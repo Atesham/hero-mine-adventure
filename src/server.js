@@ -3,10 +3,12 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import admin from 'firebase-admin';
 import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+dotenv.config(); // Load .env file at the very beginning
 
 // Initialize Firebase Admin SDK
 import { readFileSync } from 'fs';
-const serviceAccount = JSON.parse(readFileSync('./firebase-service-account-key.json'));
+const serviceAccount = JSON.parse(readFileSync('./serviceAccountKey.json', 'utf8'));
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, AlertTriangle } from 'lucide-react';
+import { Link } from "react-router-dom";
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -153,10 +154,16 @@ const Login = () => {
               </Alert>
             )}
             
-            <div className="mt-4 text-center">
+            {/* <div className="mt-4 text-center">
               Don't have an account? <a href="/signup" className="text-primary">Sign up</a>
             </div>
+           */}
+          
+          <div className="mt-4 text-center">
+  Don't have an account? <Link to="/signup" className="text-primary">Sign up</Link>
+</div>
           </div>
+
         </Container>
       </main>
       

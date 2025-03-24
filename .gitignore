@@ -12,7 +12,9 @@ dist
 dist-ssr
 *.local
 
-firebase-service-account-key.json
+serviceAccountKey.json
+
+src/serviceAccount.json
 
 src/functions/pint-145f3-firebase-adminsdk-fbsvc-5af5658614.json
 
@@ -27,4 +29,4 @@ src/functions/pint-145f3-firebase-adminsdk-fbsvc-5af5658614.json
 *.sln
 *.sw?
 *.env
-firebase-service-account-key.json
+src/serviceAccount.json

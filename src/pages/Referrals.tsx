@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { toast } from 'sonner';
-import { getUserReferrals, getReferralStats, generateReferralLink, getUserReferralCode } from '@/services/referralService';
+import { getUserReferrals, getReferralStats, generateReferralLink, getUserReferralCode } from '@/referralService';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Users, Award, RefreshCw, Download, Search, Copy, Share, Link as LinkIcon } from 'lucide-react';
