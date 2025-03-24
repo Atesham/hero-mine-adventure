@@ -14,6 +14,8 @@ dist-ssr
 
 firebase-service-account-key.json
 
+src/functions/pint-145f3-firebase-adminsdk-fbsvc-5af5658614.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
