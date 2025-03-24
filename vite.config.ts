@@ -29,7 +29,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: "/hero-mine-adventure/", // 👈 Change this to match your GitHub repository name
+  base: "/", 
   server: {
     host: "::",
     port: 8080,
