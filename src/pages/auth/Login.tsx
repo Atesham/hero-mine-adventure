@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 import Container from '@/components/ui/Container';
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"

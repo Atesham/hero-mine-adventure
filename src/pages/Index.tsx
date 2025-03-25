@@ -73,10 +73,11 @@ const Index = () => {
             </motion.h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Feature 1: Easy Mining */}
-              <motion.div
-                initial={{ opacity: 0, x: -50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+               <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }
+              }
                 className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg text-center hover:shadow-xl transition-shadow"
               >
                 <motion.div
@@ -88,12 +89,11 @@ const Index = () => {
                 <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">Easy Mining</h3>
                 <p className="text-gray-700 dark:text-gray-300">Mine coins with just a few taps—no hardware required.</p>
               </motion.div>
-
-              {/* Feature 2: Secure */}
-              <motion.div
+<motion.div
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
+                transition={{ duration: 0.5, delay: 0.3 }
+              }
                 className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg text-center hover:shadow-xl transition-shadow"
               >
                 <motion.div
@@ -105,18 +105,16 @@ const Index = () => {
                 <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">Secure</h3>
                 <p className="text-gray-700 dark:text-gray-300">Your coins are safe with our blockchain technology.</p>
               </motion.div>
-
-              {/* Feature 3: Invite Friends */}
-              <motion.div
-                initial={{ opacity: 0, x: 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg text-center hover:shadow-xl transition-shadow"
-              >
+                <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }
+              }
+                className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg text-center hover:shadow-xl transition-shadow">
                 <motion.div
                   whileHover={{ scale: 1.1, boxShadow: "0 0 20px rgba(59, 130, 246, 0.8)" }} // Neon glow on hover
-                  className="w-24 h-24 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center"
-                >
+                  className="w-24 h-24 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
+                
                   <Users className="w-12 h-12 text-primary" />
                 </motion.div>
                 <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">Invite Friends</h3>
@@ -179,7 +177,8 @@ const Index = () => {
               <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
+                transition={{ duration: 0.5, delay: 0.3 }
+              }
                 className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg shadow-lg text-center hover:shadow-xl transition-shadow"
               >
                 <motion.div
@@ -253,3 +252,4 @@ const Index = () => {
 };
 
 export default Index;
+

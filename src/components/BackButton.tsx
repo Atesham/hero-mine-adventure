@@ -33,7 +33,7 @@ const BackButton = () => {
   };
 
     // Hide back button on specific routes
-    const hiddenRoutes = ["/", "/mining", "/wallet", "/leaderboard", "/referrals"];
+    const hiddenRoutes = ["/", "/mining", "/wallet", "/leaderboard", "/referrals" , "/login", "signup"];
     if (hiddenRoutes.includes(location.pathname) || (isMobile && location.pathname === "/referrals")) return null;
     
   return (
