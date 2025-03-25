@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Container from '@/components/ui/Container';
-import { Wallet as WalletIcon, History, ArrowDownUp, QrCode, Info, Loader2, RefreshCw, MoreVertical } from 'lucide-react';
+import { Wallet as WalletIcon, History, ArrowDownUp, QrCode, Info, Loader2, RefreshCw, MoreVertical, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import QRCodeComponent from '@/components/shared/QRCode';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
@@ -12,12 +12,6 @@ import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getUserWalletData, Transaction } from '@/services/transactionService';
 import SendCoinsDialog from '@/components/wallet/SendCoinsDialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 const Wallet = () => {
   const { user } = useAuth();
@@ -276,14 +270,20 @@ const Wallet = () => {
                       ))}
 
                       {transactions.length > 5 && (
-                        <div className="text-center mt-4">
-                          <a
-                            href="/transactions"
-                            className="text-primary hover:underline text-sm font-medium"
-                          >
-                            View All Transactions →
-                          </a>
-                        </div>
+                        // <div className="text-center mt-4">
+                        //   <a
+                        //     href="/transactions"
+                        //     className="text-primary hover:underline text-sm font-medium"
+                        //   >
+                        //     View All Transactions →
+                        //   </a>
+                        // </div>
+                        <Button asChild variant="outline" className="mt-4">
+  <Link to="/transactions">
+    View All Transactions
+    <ArrowRight className="ml-2 h-4 w-4" />
+  </Link>
+</Button>
                       )}
                     </>
                   ) : (

@@ -15,6 +15,7 @@ import Wallet from "./pages/Wallet";
 import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 import Referrals from "./pages/Referrals";
+import TransactionsPage from './pages/TransactionsPage'; 
 import Profile from "./pages/Profile"; // We'll create this file
 import Careers from "./components/layout/careers";
 import Contact from "./components/layout/contact";
@@ -78,13 +79,14 @@ function App() {
               <Route path="/profile" element={<Profile />} />
               <Route path="/careers" element={<Careers />} />
               <Route path="/about" element={<About />} />
+              <Route path="/transactions" element={<TransactionsPage />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/cookies" element={<Cookies />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-            <MobileNavbar /> {/* Add Mobile Bottom Navigation */}
+            <MobileNavbar /> 
           </Router>
           <Toaster position="top-right" richColors closeButton />
         </AuthProvider>
