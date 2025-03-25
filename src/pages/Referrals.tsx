@@ -173,52 +173,7 @@ const ReferralsPage = () => {
           <p className="text-muted-foreground">
               Track all your referrals and rewards in one place
             </p>
-          </div>
-          
-          {/* <Card className="mb-8">
-            <CardHeader className="pb-4">
-              <CardTitle>Your Referral Link</CardTitle>
-              <CardDescription>Share this link with friends to earn bonus coins</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col space-y-4">
-                <div className="flex space-x-2">
-                  <Input 
-                    value={referralLink} 
-                    readOnly 
-                    className="font-mono text-sm"
-                    onClick={() => copyReferralLink()}
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={copyReferralLink}
-                    title="Copy to clipboard"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  {navigator.share && (
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={shareReferralLink}
-                      title="Share link"
-                    >
-                      <Share className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <LinkIcon className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Referral Code: <span className="font-mono">{referralCode}</span></span>
-                </div>
-              </div>
-            </CardContent>
-          </Card> */}
-          
-
-          
+          </div>          
           <Card className="mb-8">
   <CardHeader className="pb-4">
     <CardTitle>Your Referral Link</CardTitle>
