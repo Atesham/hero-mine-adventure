@@ -37,14 +37,14 @@ const BackButton = () => {
     if (hiddenRoutes.includes(location.pathname) || (isMobile && location.pathname === "/referrals")) return null;
     
   return (
-    <button
-      onClick={handleBack}
-      className="fixed top-4 left-4 flex items-center gap-2 bg-gray-800 text-white px-3 py-2 rounded-lg shadow-md hover:bg-gray-700 transition"
-    >
-      <ArrowLeft size={20} />
-      <span>Back</span>
-    </button>
+
+<button
+  onClick={handleBack}
+  className="fixed top-16 left-4 z-50 flex items-center gap-2 bg-gray-800 text-white px-3 py-2 rounded-lg shadow-md hover:bg-gray-700 transition"
+>
+  <ArrowLeft size={20} />
+  <span>Back</span>
+</button>
+
   );
 };
-  
-export default BackButton;

@@ -22,7 +22,6 @@ import Privacy from "./components/layout/privacy";
 import Terms from "./components/layout/terms";
 import Cookies from "./components/layout/cookies";
 import About from "./components/layout/about";
-import BackButton from "./components/BackButton"; // Import Back Button
 import MobileNavbar from "./components/layout/MobileNavbar"; // Import Mobile Navbar
 
 // 📌 Scroll Manager - Saves & Restores Scroll Position
@@ -68,7 +67,6 @@ function App() {
         <AuthProvider>
           <Router>
             <ScrollManager />
-            <BackButton /> {/* Global Back Button */}
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
