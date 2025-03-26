@@ -126,6 +126,13 @@
   transform: translateY(10px);
 }
 
+/* Ensure adsbygoogle container has proper layout */
+ins.adsbygoogle {
+  display: block !important;
+  margin: 0 auto;
+  text-align: center;
+}
+
 .page-enter-active {
   opacity: 1;
   transform: translateY(0);

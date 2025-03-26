@@ -600,59 +600,90 @@ const MiningCard = () => {
     };
   }, [timeRemaining]);
 
-  // Load AdSense ad
-  useEffect(() => {
-    if (!showAdPage || !user) return;
+ // Load AdSense ad with flexible container
+ useEffect(() => {
+  if (!showAdPage || !user) return;
 
-    const loadAd = () => {
-      setAdLoading(true);
-      setAdError(false);
-      setCanCloseAd(false);
+  const loadAd = () => {
+    setAdLoading(true);
+    setAdError(false);
+    setCanCloseAd(false);
 
-      try {
-        // Clear previous ad if exists
-        if (adContainerRef.current) {
-          adContainerRef.current.innerHTML = '';
-        }
+    // Ensure container has dimensions
+    if (adContainerRef.current) {
+      adContainerRef.current.style.minHeight = '250px';
+      adContainerRef.current.style.width = '100%';
+      adContainerRef.current.style.maxWidth = '100vw';
+    }
 
-        // Create ad element
-        const adElement = document.createElement('ins');
-        adElement.className = 'adsbygoogle';
-        adElement.style.display = 'block';
-        adElement.dataset.adClient = 'ca-pub-5478626290073215';
-        adElement.dataset.adSlot = '7643212953';
-        adElement.dataset.adFormat = 'auto';
-        adElement.dataset.fullWidthResponsive = 'true';
-
-        if (adContainerRef.current) {
-          adContainerRef.current.appendChild(adElement);
-        }
-
-        // Push ad to AdSense
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-
-        // Allow closing after 30 seconds (simulating ad duration)
-        setTimeout(() => {
-          setCanCloseAd(true);
-          setAdLoading(false);
-        }, 30000);
-
-      } catch (error) {
-        console.error('Error loading ad:', error);
-        setAdError(true);
-        setAdLoading(false);
-      }
-    };
-
-    loadAd();
-
-    return () => {
-      // Cleanup
+    try {
+      // Clear previous ad if exists
       if (adContainerRef.current) {
         adContainerRef.current.innerHTML = '';
       }
-    };
-  }, [showAdPage, user]);
+
+      // Create flexible ad element
+      const adElement = document.createElement('ins');
+      adElement.className = 'adsbygoogle';
+      adElement.style.display = 'block';
+      
+      // Use fluid ad size for maximum flexibility
+      adElement.dataset.adClient = 'ca-pub-5478626290073215';
+      adElement.dataset.adSlot = '7643212953';
+      adElement.dataset.adFormat = 'fluid';
+      adElement.dataset.adLayoutKey = '-gw-3+1f-3k+5z';
+      adElement.dataset.fullWidthResponsive = 'true';
+// For rectangle ads:
+adElement.dataset.adFormat = 'rectangle';
+adElement.style.width = '300px';
+adElement.style.height = '250px';
+
+// For vertical banners:
+adElement.dataset.adFormat = 'vertical';
+adElement.style.width = '120px';
+adElement.style.height = '600px';
+      if (adContainerRef.current) {
+        adContainerRef.current.appendChild(adElement);
+      }
+
+      // Push ad with error handling
+      const pushAd = () => {
+        try {
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+        } catch (e) {
+          console.error('Ad push error:', e);
+          setAdError(true);
+          setAdLoading(false);
+        }
+      };
+
+      // Small delay to ensure container is rendered
+      setTimeout(pushAd, 100);
+
+      // Allow closing after 30 seconds
+      const closeTimer = setTimeout(() => {
+        setCanCloseAd(true);
+        setAdLoading(false);
+      }, 30000);
+
+      return () => clearTimeout(closeTimer);
+
+    } catch (error) {
+      console.error('Error loading ad:', error);
+      setAdError(true);
+      setAdLoading(false);
+    }
+  };
+
+  const timer = setTimeout(loadAd, 300); // Slight delay to ensure container is ready
+
+  return () => {
+    clearTimeout(timer);
+    if (adContainerRef.current) {
+      adContainerRef.current.innerHTML = '';
+    }
+  };
+}, [showAdPage, user]);
 
   const startMining = () => {
     if (adWatched >= 2) return;
@@ -741,47 +772,56 @@ const MiningCard = () => {
   if (showAdPage) {
     return (
       <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-2xl bg-white rounded-lg overflow-hidden">
-          <div className="relative">
-            <div 
-              ref={adContainerRef}
-              className="w-full min-h-[250px] bg-gray-100 flex items-center justify-center"
-            >
-              {adLoading && (
-                <div className="text-center p-4">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-                  <p className="mt-2">Loading advertisement...</p>
-                </div>
-              )}
-              {adError && (
-                <div className="text-center p-4">
-                  <p className="text-red-600">Failed to load ad</p>
-                  <Button 
-                    onClick={() => setShowAdPage(false)}
-                    className="mt-4"
-                    variant="destructive"
-                  >
-                    Go Back
-                  </Button>
-                </div>
-              )}
-            </div>
-            
-            {canCloseAd && (
+        <div className="w-full max-w-4xl bg-white rounded-lg overflow-hidden flex flex-col">
+          {/* Close button (only visible when ad is complete) */}
+          {canCloseAd && (
+            <div className="flex justify-end p-2 bg-gray-100">
               <button
                 onClick={handleAdComplete}
-                className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition"
+                className="text-gray-700 hover:text-gray-900 transition"
+                aria-label="Close ad"
               >
-                <X className="h-5 w-5" />
+                <X className="h-6 w-6" />
               </button>
+            </div>
+          )}
+          
+          {/* Flexible ad container */}
+          <div 
+            ref={adContainerRef}
+            className="flex-1 flex items-center justify-center bg-gray-50"
+            style={{
+              minHeight: '250px',
+              width: '100%',
+            }}
+          >
+            {adLoading && !adError && (
+              <div className="text-center p-4">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-600" />
+                <p className="mt-2 text-gray-600">Loading advertisement...</p>
+              </div>
+            )}
+            
+            {adError && (
+              <div className="text-center p-4">
+                <p className="text-red-600">Failed to load advertisement</p>
+                <Button 
+                  onClick={() => setShowAdPage(false)}
+                  className="mt-4"
+                  variant="destructive"
+                >
+                  Go Back
+                </Button>
+              </div>
             )}
           </div>
           
-          <div className="p-4 bg-gray-50 text-center">
+          {/* Ad status message */}
+          <div className="p-3 bg-gray-100 text-center border-t">
             <p className="text-sm text-gray-600">
               {canCloseAd 
-                ? "Ad completed. You may now close this ad."
-                : "Please watch the ad to completion..."}
+                ? "Advertisement completed - you may now close"
+                : "Please watch the advertisement to completion"}
             </p>
           </div>
         </div>
