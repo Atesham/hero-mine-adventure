@@ -394,124 +394,225 @@ const cleanupAd = () => {
   return cleanupAd;
 }, [showAd, adAttempts, containerReady]);
 
-  return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="glass-card rounded-3xl p-8 shadow-lg">
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Coins className="w-8 h-8 text-primary" />
-          </div>
-          <h2 className="text-2xl font-bold">Hero Coin Mining</h2>
-          <p className="text-muted-foreground mt-2">
-            Watch ads to earn Hero Coins
-          </p>
-        </div>
+//   return (
+//     <div className="w-full max-w-md mx-auto">
+//       <div className="glass-card rounded-3xl p-8 shadow-lg">
+//         <div className="text-center mb-6">
+//           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+//             <Coins className="w-8 h-8 text-primary" />
+//           </div>
+//           <h2 className="text-2xl font-bold">Hero Coin Mining</h2>
+//           <p className="text-muted-foreground mt-2">
+//             Watch ads to earn Hero Coins
+//           </p>
+//         </div>
 
-        return (
-        <div className="w-full max-w-md mx-auto">
-          <div className="glass-card rounded-3xl p-8 shadow-lg">
+//         return (
+//         <div className="w-full max-w-md mx-auto">
+//           <div className="glass-card rounded-3xl p-8 shadow-lg">
 
         
 
 
-          {showAd && (
-          <div
-            ref={adContainerRef}
-            className="my-4 min-h-[250px] flex items-center justify-center w-full bg-gray-50 rounded-lg"
-            style={{ minWidth: '300px' }}
-            key={`ad-container-${adAttempts}`}
-          >
-            {adError ? (
-              <div className="text-center p-4">
-                <p className="text-red-600">
-                  {adAttempts >= 3 ? 'Ad loading failed' : 'Error loading ad'}
-                </p>
-                {adAttempts < 3 && (
-                  <button
-                    onClick={() => setAdAttempts(prev => prev + 1)}
-                    className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                  >
-                    Try Again
-                  </button>
-                )}
-              </div>
-            ) : !adLoaded ? (
-              <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                <p className="mt-2">Loading advertisement</p>
-                {!containerReady && (
-                  <p className="text-sm text-gray-500 mt-1">Preparing container...</p>
-                )}
-              </div>
-            ) : null}
+//           {showAd && (
+//           <div
+//             ref={adContainerRef}
+//             className="my-4 min-h-[250px] flex items-center justify-center w-full bg-gray-50 rounded-lg"
+//             style={{ minWidth: '300px' }}
+//             key={`ad-container-${adAttempts}`}
+//           >
+//             {adError ? (
+//               <div className="text-center p-4">
+//                 <p className="text-red-600">
+//                   {adAttempts >= 3 ? 'Ad loading failed' : 'Error loading ad'}
+//                 </p>
+//                 {adAttempts < 3 && (
+//                   <button
+//                     onClick={() => setAdAttempts(prev => prev + 1)}
+//                     className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+//                   >
+//                     Try Again
+//                   </button>
+//                 )}
+//               </div>
+//             ) : !adLoaded ? (
+//               <div className="text-center">
+//                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+//                 <p className="mt-2">Loading advertisement</p>
+//                 {!containerReady && (
+//                   <p className="text-sm text-gray-500 mt-1">Preparing container...</p>
+//                 )}
+//               </div>
+//             ) : null}
+//           </div>
+//         )}
+
+
+
+//           </div>
+//         </div>
+//         );
+//         <div className="space-y-6">
+//           {/* Mining progress */}
+//           {isMining && (
+//             <div className="space-y-3">
+//               <div className="flex items-center justify-between text-sm">
+//                 <span>Mining progress</span>
+//                 <span>{progress}%</span>
+//               </div>
+//               <Progress value={progress} className="h-2" />
+//             </div>
+//           )}
+
+//           {/* Ads watched counter */}
+//           <div className="bg-secondary/50 rounded-xl p-4">
+//             <div className="flex items-center justify-between">
+//               <span className="text-sm font-medium">Ads Watched</span>
+//               <span className="text-sm font-semibold">{adWatched}/2</span>
+//             </div>
+//           </div>
+
+//           {/* Cooldown timer */}
+//           {timeRemaining !== null && (
+//             <div className="bg-secondary/50 rounded-xl p-4">
+//               <div className="flex items-center mb-2">
+//                 <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
+//                 <span className="text-sm font-medium">Next mining available in:</span>
+//               </div>
+//               <div className="text-2xl font-mono text-center font-bold">
+//                 {formatTimeRemaining()}
+//               </div>
+//             </div>
+//           )}
+
+//           {/* Start mining button */}
+//           <Button
+//             className="w-full rounded-xl py-6 text-lg font-medium"
+//             disabled={isMining || timeRemaining !== null}
+//             onClick={startMining}
+//           >
+//             {isMining ? (
+//               <>
+//                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+//                 Mining...
+//               </>
+//             ) : timeRemaining !== null ? (
+//               <>
+//                 <Clock className="mr-2 h-5 w-5" />
+//                 Cooling Down
+//               </>
+//             ) : (
+//               <>
+//                 <PlayCircle className="mr-2 h-5 w-5" />
+//                 Start Mining
+//               </>
+//             )}
+//           </Button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+// export default MiningCard;
+
+
+
+return (
+  <div className="w-full max-w-md mx-auto">
+    <div className="glass-card rounded-3xl p-8 shadow-lg">
+      {showAd && (
+        <div
+          ref={adContainerRef}
+          className="my-4 min-h-[250px] flex items-center justify-center w-full bg-gray-50 rounded-lg"
+          style={{ minWidth: '300px' }}
+          key={`ad-container-${adAttempts}`}
+        >
+          {adError ? (
+            <div className="text-center p-4">
+              <p className="text-red-600">
+                {adAttempts >= 3 ? 'Ad loading failed' : 'Error loading ad'}
+              </p>
+              {adAttempts < 3 && (
+                <button
+                  onClick={() => setAdAttempts(prev => prev + 1)}
+                  className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                >
+                  Try Again
+                </button>
+              )}
+            </div>
+          ) : !adLoaded ? (
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+              <p className="mt-2">Loading advertisement</p>
+              {!containerReady && (
+                <p className="text-sm text-gray-500 mt-1">Preparing container...</p>
+              )}
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      <div className="space-y-6">
+        {/* Mining progress */}
+        {isMining && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span>Mining progress</span>
+              <span>{progress}%</span>
+            </div>
+            <Progress value={progress} className="h-2" />
           </div>
         )}
 
-
-
+        {/* Ads watched counter */}
+        <div className="bg-secondary/50 rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Ads Watched</span>
+            <span className="text-sm font-semibold">{adWatched}/2</span>
           </div>
         </div>
-        );
-        <div className="space-y-6">
-          {/* Mining progress */}
-          {isMining && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span>Mining progress</span>
-                <span>{progress}%</span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
-          )}
 
-          {/* Ads watched counter */}
+        {/* Cooldown timer */}
+        {timeRemaining !== null && (
           <div className="bg-secondary/50 rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Ads Watched</span>
-              <span className="text-sm font-semibold">{adWatched}/2</span>
+            <div className="flex items-center mb-2">
+              <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
+              <span className="text-sm font-medium">Next mining available in:</span>
+            </div>
+            <div className="text-2xl font-mono text-center font-bold">
+              {formatTimeRemaining()}
             </div>
           </div>
+        )}
 
-          {/* Cooldown timer */}
-          {timeRemaining !== null && (
-            <div className="bg-secondary/50 rounded-xl p-4">
-              <div className="flex items-center mb-2">
-                <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
-                <span className="text-sm font-medium">Next mining available in:</span>
-              </div>
-              <div className="text-2xl font-mono text-center font-bold">
-                {formatTimeRemaining()}
-              </div>
-            </div>
+        {/* Start mining button */}
+        <Button
+          className="w-full rounded-xl py-6 text-lg font-medium"
+          disabled={isMining || timeRemaining !== null}
+          onClick={startMining}
+        >
+          {isMining ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Mining...
+            </>
+          ) : timeRemaining !== null ? (
+            <>
+              <Clock className="mr-2 h-5 w-5" />
+              Cooling Down
+            </>
+          ) : (
+            <>
+              <PlayCircle className="mr-2 h-5 w-5" />
+              Start Mining
+            </>
           )}
-
-          {/* Start mining button */}
-          <Button
-            className="w-full rounded-xl py-6 text-lg font-medium"
-            disabled={isMining || timeRemaining !== null}
-            onClick={startMining}
-          >
-            {isMining ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Mining...
-              </>
-            ) : timeRemaining !== null ? (
-              <>
-                <Clock className="mr-2 h-5 w-5" />
-                Cooling Down
-              </>
-            ) : (
-              <>
-                <PlayCircle className="mr-2 h-5 w-5" />
-                Start Mining
-              </>
-            )}
-          </Button>
-        </div>
+        </Button>
       </div>
     </div>
-  );
+  </div>
+);
 };
-export default MiningCard;
 
+export default MiningCard;
