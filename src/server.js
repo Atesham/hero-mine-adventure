@@ -186,6 +186,8 @@ admin.initializeApp({
 const db = admin.firestore();
 const app = express();
 app.use(cors({
+origin:  hero-mine-adventure.vercel.app,
+
   origin: 'http://localhost:8080', // Replace with your frontend URL
   credentials: true,
 }));
