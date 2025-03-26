@@ -14,13 +14,18 @@ const MiningCard = () => {
   const [progress, setProgress] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState<null | number>(null);
   const adElementRef = useRef<HTMLDivElement>(null); // Add this line
-
   const [adWatched, setAdWatched] = useState(0);
   const { user } = useAuth();
   const [showAd, setShowAd] = useState(false);
-  const adContainerRef = useRef<HTMLDivElement>(null);
 
-  useAdSense(showAd);  
+// Refs
+const adContainerRef = useRef<HTMLDivElement>(null);
+const adRetryTimeoutRef = useRef<NodeJS.Timeout>();
+const adTimeoutRef = useRef<NodeJS.Timeout>();
+
+
+
+useAdSense(showAd);  
 
   useEffect(() => {
     if (!user) return;
@@ -128,26 +133,17 @@ const MiningCard = () => {
 
   const startMining = () => {
     if (!user || isMining || timeRemaining) return;
-  
+
+    // Reset state for new attempt
     setShowAd(false);
     setAdAttempts(0);
     setAdError(false);
     setAdLoaded(false);
-  
-    // Small delay to ensure DOM updates
+
+    // Small delay to ensure clean state
     setTimeout(() => {
       setShowAd(true);
       toast.info('Loading ad...');
-      
-      // Fallback if ad doesn't load
-      const fallbackTimer = setTimeout(() => {
-        if (!adLoaded && !adError) {
-          setAdError(true);
-          toast.warning('Ad failed to load');
-        }
-      }, 8000);
-  
-      return () => clearTimeout(fallbackTimer);
     }, 100);
   };
 
@@ -220,62 +216,65 @@ const MiningCard = () => {
   const [adLoaded, setAdLoaded] = useState(false);
   const [adAttempts, setAdAttempts] = useState(0);
   
-// Debug function
-const logAdState = (message: string) => {
-  const adElement = adElementRef.current?.querySelector('.adsbygoogle');
-  console.log(`[AdDebug] ${message}`, {
-    showAd,
-    adLoaded,
-    adError,
-    adAttempts,
-    adElementExists: !!adElement,
-    adStatus: adElement?.getAttribute('data-adsbygoogle-status'),
-    windowAds: !!window.adsbygoogle
-  });
-};
-  const adTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Cleanup function
-const cleanupAd = () => {
-  if (adTimeoutRef.current) {
-    clearTimeout(adTimeoutRef.current);
-  }
+    // Debug function
+    const logAdState = (message: string) => {
+      const adElement = adContainerRef.current?.querySelector('.adsbygoogle');
+      console.log(`[AdDebug] ${message}`, {
+        showAd,
+        adLoaded,
+        adError,
+        adAttempts,
+        adElementExists: !!adElement,
+        adStatus: adElement?.getAttribute('data-adsbygoogle-status'),
+        windowAds: !!window.adsbygoogle,
+        containerReady: !!adContainerRef.current
+      });
+    };
+  
+
+ // Cleanup function
+ const cleanupAd = () => {
+  if (adTimeoutRef.current) clearTimeout(adTimeoutRef.current);
+  if (adRetryTimeoutRef.current) clearTimeout(adRetryTimeoutRef.current);
   setAdLoaded(false);
   setAdError(false);
 };
 
-
   // This effect handles the ad loading
   useEffect(() => {
     if (!showAd) {
-      // Cleanup when ad is hidden
-      if (adTimeoutRef.current) clearTimeout(adTimeoutRef.current);
+      cleanupAd();
       return;
     }
-  
+
     logAdState('Effect triggered');
-  
+
     // If we've tried too many times, show error
     if (adAttempts >= 3) {
       logAdState('Max attempts reached');
       setAdError(true);
       return;
     }
-  
+
+    // Verify container is ready
+    if (!adContainerRef.current) {
+      logAdState('Container not ready - retrying');
+      adRetryTimeoutRef.current = setTimeout(() => {
+        setAdAttempts(prev => prev + 1);
+      }, 500);
+      return;
+    }
+
     const loadAd = () => {
       try {
         if (!window.adsbygoogle) {
           throw new Error('AdSense script not loaded');
         }
-  
-        // Create new ad container if needed
-        if (!adElementRef.current) {
-          throw new Error('Ad container not ready');
-        }
-  
-        // Clear previous ad element
-        adElementRef.current.innerHTML = '';
-  
+
+        // Clear previous content
+        adContainerRef.current!.innerHTML = '';
+
         // Create new ad element
         const adElement = document.createElement('ins');
         adElement.className = 'adsbygoogle';
@@ -285,14 +284,15 @@ const cleanupAd = () => {
         adElement.dataset.adFormat = 'auto';
         adElement.dataset.fullWidthResponsive = 'true';
         
-        adElementRef.current.appendChild(adElement);
-  
+        adContainerRef.current!.appendChild(adElement);
+
         logAdState('Pushing new ad');
         (window.adsbygoogle = window.adsbygoogle || []).push({});
-  
+
         // Verify ad loaded
         adTimeoutRef.current = setTimeout(() => {
-          if (adElement.getAttribute('data-adsbygoogle-status') === 'done') {
+          const currentAd = adContainerRef.current?.querySelector('.adsbygoogle');
+          if (currentAd?.getAttribute('data-adsbygoogle-status') === 'done') {
             logAdState('Ad loaded successfully');
             setAdLoaded(true);
             setAdError(false);
@@ -302,7 +302,7 @@ const cleanupAd = () => {
             setAdAttempts(prev => prev + 1);
           }
         }, 3000);
-  
+
       } catch (err) {
         console.error('AdSense error:', err);
         logAdState(`Error: ${err.message}`);
@@ -310,15 +310,16 @@ const cleanupAd = () => {
         setAdAttempts(prev => prev + 1);
       }
     };
-  
+
     // Delay to ensure DOM is ready
-    adTimeoutRef.current = setTimeout(loadAd, 500);
-  
+    adTimeoutRef.current = setTimeout(loadAd, 100);
+
     return () => {
-      if (adTimeoutRef.current) clearTimeout(adTimeoutRef.current);
+      cleanupAd();
     };
   }, [showAd, adAttempts]);
-   
+
+  
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="glass-card rounded-3xl p-8 shadow-lg">
@@ -335,44 +336,38 @@ const cleanupAd = () => {
         return (
   <div className="w-full max-w-md mx-auto">
     <div className="glass-card rounded-3xl p-8 shadow-lg">
-      {showAd && (
-        <div ref={adContainerRef} className="my-4 min-h-[250px] flex items-center justify-center">
-          {adError ? (
-            <div className="text-center p-4 bg-red-50 rounded-lg">
-              <p className="text-red-600">
-                {adAttempts > 3 ? 'Max attempts reached' : 'Ad failed to load'}
-              </p>
-              {adAttempts <= 3 && (
-                <Button 
-                  variant="outline" 
-                  className="mt-2"
-                  onClick={() => {
-                    setAdError(false);
-                    setAdAttempts(prev => prev + 1);
-                  }}
-                >
-                  Retry ({3 - adAttempts} left)
-                </Button>
-              )}
-            </div>
-          ) : !adLoaded ? (
-            <div className="text-center">
-              <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-              <p>Loading ad... {adAttempts > 0 && `(Attempt ${adAttempts})`}</p>
-            </div>
-          ) : (
-            <ins
-              key={`ad-${Date.now()}`} // Unique key forces fresh mount
-              className="adsbygoogle"
-              style={{ display: 'block' }}
-              data-ad-client="ca-pub-5478626290073215"
-              data-ad-slot="7643212953"
-              data-ad-format="auto"
-              data-full-width-responsive="true"
-            />
-          )}
-        </div>
-      )}
+    {showAd && (
+          <div 
+            ref={adContainerRef}
+            className="my-4 min-h-[250px] flex items-center justify-center"
+            key={`ad-container-${adAttempts}`} // Force re-render on retry
+          >
+            {adError ? (
+              <div className="text-center p-4 bg-red-50 rounded-lg">
+                <p className="text-red-600">
+                  {adAttempts >= 3 ? 'Max attempts reached' : 'Ad failed to load'}
+                </p>
+                {adAttempts < 3 && (
+                  <Button 
+                    variant="outline" 
+                    className="mt-2"
+                    onClick={() => {
+                      setAdError(false);
+                      setAdAttempts(prev => prev + 1);
+                    }}
+                  >
+                    Retry ({3 - adAttempts} left)
+                  </Button>
+                )}
+              </div>
+            ) : !adLoaded ? (
+              <div className="text-center">
+                <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+                <p>Loading ad... {adAttempts > 0 && `(Attempt ${adAttempts})`}</p>
+              </div>
+            ) : null}
+          </div>
+        )}
 
     </div>
   </div>
