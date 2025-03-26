@@ -214,96 +214,154 @@ const MiningCard = () => {
   }
 
   // Add this to your component
-const [adError, setAdError] = useState(false);
-const [adLoaded, setAdLoaded] = useState(false);
-
-// This effect handles the ad loading
-useEffect(() => {
-  if (!showAd || !adLoaded) return;
-
-  const adElement = adContainerRef.current?.querySelector('.adsbygoogle');
-  if (adElement && !adElement.getAttribute('data-adsbygoogle-status')) {
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (err) {
-      console.error('AdSense push error 1:', err);
-      setAdError(true);
-    }}
-
-  const loadAd = () => {
-    try {
-      // Check if adsbygoogle is available
-      if (window.adsbygoogle) {
+  const [adError, setAdError] = useState(false);
+  const [adLoaded, setAdLoaded] = useState(false);
+  const [adAttempts, setAdAttempts] = useState(0);
+  
+  // Debug function to log ad state
+  const logAdState = (message: string) => {
+    const adElement = adContainerRef.current?.querySelector('.adsbygoogle');
+    console.log(`[AdDebug] ${message}`, {
+      showAd,
+      adLoaded,
+      adError,
+      adAttempts,
+      adElementExists: !!adElement,
+      adStatus: adElement?.getAttribute('data-adsbygoogle-status'),
+      windowAds: !!window.adsbygoogle
+    });
+  };
+  
+  // This effect handles the ad loading
+  useEffect(() => {
+    if (!showAd) return;
+  
+    logAdState('Effect triggered');
+  
+    // Cleanup previous ad if it exists
+    const cleanupAd = () => {
+      const adElement = adContainerRef.current?.querySelector('.adsbygoogle');
+      if (adElement) {
+        adElement.removeAttribute('data-ad-loaded');
+        adElement.removeAttribute('data-adsbygoogle-status');
+      }
+    };
+  
+    const loadAd = () => {
+      logAdState('Attempting to load ad');
+      cleanupAd();
+  
+      try {
+        if (!window.adsbygoogle) {
+          logAdState('AdSense script not loaded');
+          setAdError(true);
+          return;
+        }
+  
+        const adElement = adContainerRef.current?.querySelector('.adsbygoogle');
+        if (!adElement) {
+          logAdState('Ad element not found in DOM');
+          setAdError(true);
+          return;
+        }
+  
+        if (adElement.getAttribute('data-ad-loaded') === 'true') {
+          logAdState('Ad already loaded - skipping');
+          return;
+        }
+  
+        logAdState('Pushing new ad');
         (window.adsbygoogle = window.adsbygoogle || []).push({});
-        setAdError(false);
+        adElement.setAttribute('data-ad-loaded', 'true');
         
-        // Simulate ad loaded (in real app, use actual ad callbacks)
-        setTimeout(() => setAdLoaded(true), 1000);
-      } else {
+        // Set a timeout to verify ad loaded
+        const verifyLoad = setTimeout(() => {
+          if (adElement.getAttribute('data-adsbygoogle-status') === 'done') {
+            logAdState('Ad successfully loaded');
+            setAdLoaded(true);
+            setAdError(false);
+          } else {
+            logAdState('Ad failed to load within timeout');
+            setAdError(true);
+          }
+        }, 2000);
+  
+        return () => clearTimeout(verifyLoad);
+      } catch (err) {
+        console.error('AdSense error:', err);
+        logAdState(`Error: ${err.message}`);
         setAdError(true);
       }
-    } catch (err) {
-      console.error('AdSense error:', err);
-      setAdError(true);
+    };
+  
+    // Delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      setAdAttempts(prev => prev + 1);
+      loadAd();
+    }, 500);
+  
+    return () => {
+      clearTimeout(timer);
+      logAdState('Cleaning up effect');
+    };
+  }, [showAd, adAttempts]);
+  
+  // Reset ad state when hiding
+  useEffect(() => {
+    if (!showAd) {
+      setAdLoaded(false);
+      setAdError(false);
     }
-  };
+  }, [showAd]);
 
-  // Small delay to ensure DOM is ready
-  const timer = setTimeout(loadAd, 300);
-  return () => clearTimeout(timer);
-}, [showAd]);
-
-
-
-return (
-  <div className="w-full max-w-md mx-auto">
-    <div className="glass-card rounded-3xl p-8 shadow-lg">
-      <div className="text-center mb-6">
-        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Coins className="w-8 h-8 text-primary" />
+  return (
+    <div className="w-full max-w-md mx-auto">
+      <div className="glass-card rounded-3xl p-8 shadow-lg">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Coins className="w-8 h-8 text-primary" />
+          </div>
+          <h2 className="text-2xl font-bold">Hero Coin Mining</h2>
+          <p className="text-muted-foreground mt-2">
+            Watch ads to earn Hero Coins
+          </p>
         </div>
-        <h2 className="text-2xl font-bold">Hero Coin Mining</h2>
-        <p className="text-muted-foreground mt-2">
-          Watch ads to earn Hero Coins
-        </p>
-      </div>
-
-      {showAd && (
-  <div ref={adContainerRef} className="my-4 min-h-[250px] flex items-center justify-center">
-    {adError ? (
-      <div className="text-center p-4 bg-red-50 rounded-lg">
-        <p className="text-red-600">Ad failed to load</p>
-        <Button 
-          variant="outline" 
-          className="mt-2"
-          onClick={() => {
-            setShowAd(false);
-            setTimeout(startMining, 100);
-          }}
-        >
-          Try Again
-        </Button>
-      </div>
-    ) : !adLoaded ? (
-      <div className="text-center">
-        <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-        <p>Loading ad...</p>
-      </div>
-    ) : (
-      <div key={Date.now()}> {/* Force new mount each time */}
-        <ins
-          className="adsbygoogle"
-          style={{ display: 'block' }}
-          data-ad-client="ca-pub-5478626290073215"
-          data-ad-slot="7643212953"
-          data-ad-format="auto"
-          data-full-width-responsive="true"
-        />
-      </div>
-    )}
-  </div>
-)}
-      
+  
+        {showAd && (
+          <div ref={adContainerRef} className="my-4 min-h-[250px] flex items-center justify-center">
+            {adError ? (
+              <div className="text-center p-4 bg-red-50 rounded-lg">
+                <p className="text-red-600">Ad failed to load (Attempt {adAttempts})</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-2"
+                  onClick={() => {
+                    setAdAttempts(0);
+                    setAdError(false);
+                  }}
+                >
+                  Retry Ad
+                </Button>
+              </div>
+            ) : !adLoaded ? (
+              <div className="text-center">
+                <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+                <p>Loading ad... (Attempt {adAttempts})</p>
+              </div>
+            ) : (
+              <ins
+                key={`ad-${adAttempts}`}
+                className="adsbygoogle"
+                style={{ display: 'block' }}
+                data-ad-client="ca-pub-5478626290073215"
+                data-ad-slot="7643212953"
+                data-ad-format="auto"
+                data-full-width-responsive="true"
+              />
+            )}
+          </div>
+        )}
+  
         <div className="space-y-6">
           {/* Mining progress */}
           {isMining && (
@@ -363,7 +421,5 @@ return (
         </div>
       </div>
     </div>
-  );
-};
-
+  );}
 export default MiningCard;
