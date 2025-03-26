@@ -875,7 +875,6 @@ import { Link } from 'react-router-dom';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, increment, collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-// Global declaration for Adsterra
 declare global {
   interface Window {
     popunder?: {
@@ -951,60 +950,53 @@ const MiningCard = () => {
     };
   }, [timeRemaining]);
 
-  const initializeAdsterra = async () => {
-    return new Promise<void>((resolve, reject) => {
-      // Check if already loaded
-      if (window.popunder) {
-        resolve();
-        return;
+  const showAdsterraAd = async () => {
+    setIsLoading(true);
+    
+    try {
+      // First, check if the script is already loaded
+      if (!window.popunder) {
+        // Set popunder parameters before loading script
+        window.popParams = {
+          under: true,
+          rel: 'nofollow',
+          position: 'center',
+          width: 800,
+          height: 600
+        };
+
+        // Create script element
+        const script = document.createElement('script');
+        script.src = 'https://www.adsterra.com/script.js'; // Use Adsterra's main script
+        script.async = true;
+        
+        // Load the script
+        await new Promise<void>((resolve, reject) => {
+          script.onload = () => {
+            // Sometimes the script loads but the object isn't immediately available
+            const checkInterval = setInterval(() => {
+              if (window.popunder) {
+                clearInterval(checkInterval);
+                resolve();
+              }
+            }, 100);
+
+            // Timeout after 5 seconds
+            setTimeout(() => {
+              clearInterval(checkInterval);
+              reject(new Error('Adsterra popunder not initialized'));
+            }, 5000);
+          };
+
+          script.onerror = () => {
+            reject(new Error('Failed to load Adsterra script'));
+          };
+
+          document.body.appendChild(script);
+        });
       }
 
-      // Create script element
-      const script = document.createElement('script');
-      // script.src = '//pl26224475.effectiveratecpm.com/95/9b/be/959bbed0b4d44c279370c930a2fdefc9.js';
-      script.async = true;
-      <script type='text/javascript' src='//pl26224475.effectiveratecpm.com/95/9b/be/959bbed0b4d44c279370c930a2fdefc9.js'></script>
-
-      // Set up parameters before loading script
-      window.popParams = {
-        under: true,
-        rel: 'nofollow',
-        position: 'center',
-        width: 800,
-        height: 600
-      };
-
-      script.onload = () => {
-        // Sometimes the script loads but the object isn't immediately available
-        const checkInterval = setInterval(() => {
-          if (window.popunder) {
-            clearInterval(checkInterval);
-            resolve();
-          }
-        }, 100);
-
-        // Timeout after 5 seconds
-        setTimeout(() => {
-          clearInterval(checkInterval);
-          reject(new Error('Adsterra popunder not initialized'));
-        }, 5000);
-      };
-
-      script.onerror = () => {
-        reject(new Error('Failed to load Adsterra script'));
-      };
-
-      document.body.appendChild(script);
-    });
-  };
-
-  const showAd = async () => {
-    setIsLoading(true);
-    try {
-      // Initialize Adsterra
-      await initializeAdsterra();
-      
-      // Show the popunder ad
+      // Now show the popunder ad
       window.popunder?.push({
         url: 'https://www.adsterra.com',
         where: 'under'
@@ -1026,7 +1018,7 @@ const MiningCard = () => {
   const startMining = async () => {
     if (timeRemaining !== null || !user) return;
 
-    const adSuccess = await showAd();
+    const adSuccess = await showAdsterraAd();
     if (!adSuccess) return;
 
     setAdWatched(prev => prev + 1);
