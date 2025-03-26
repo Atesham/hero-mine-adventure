@@ -122,24 +122,32 @@ const MiningCard = () => {
     
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
-  const startMining = () => {
-    if (!user || isMining || timeRemaining) return;
-    
-    setShowAd(true);
-    setIsMining(true);
-    
-    // Fallback in case ad doesn't load
-    const fallbackTimer = setTimeout(() => {
-      if (progress === 0) {
-        toast.warning('Ad not loaded, please try again');
-        setIsMining(false);
-        setShowAd(false);
-      }
-    }, 10000); // 10 seconds timeout
-    
-    return () => clearTimeout(fallbackTimer);
-  };
 
+
+  const startMining = () => {
+  if (!user || isMining || timeRemaining) return;
+  
+  toast.info('Loading ad...', {
+    description: 'Please wait while we load the ad'
+  });
+
+  setShowAd(true);
+  setAdLoaded(false);
+  setAdError(false);
+  
+  // Fallback if ad doesn't load
+  const fallbackTimer = setTimeout(() => {
+    if (!adLoaded && !adError) {
+      setAdError(true);
+      toast.warning('Ad failed to load', {
+        description: 'Please try again later'
+      });
+      setShowAd(false);
+    }
+  }, 8000); // 8 second timeout
+
+  return () => clearTimeout(fallbackTimer);
+};
   
   const handleMiningComplete = async () => {
     if (!user) return;
@@ -204,29 +212,89 @@ const MiningCard = () => {
     );
   }
 
-  return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="glass-card rounded-3xl p-8 shadow-lg">
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Coins className="w-8 h-8 text-primary" />
-          </div>
-          <h2 className="text-2xl font-bold">Hero Coin Mining</h2>
-          <p className="text-muted-foreground mt-2">
-            Watch ads to earn Hero Coins
-          </p>
+  // Add this to your component
+const [adError, setAdError] = useState(false);
+const [adLoaded, setAdLoaded] = useState(false);
+
+// This effect handles the ad loading
+useEffect(() => {
+  if (!showAd) return;
+
+  const loadAd = () => {
+    try {
+      // Check if adsbygoogle is available
+      if (window.adsbygoogle) {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+        setAdError(false);
+        
+        // Simulate ad loaded (in real app, use actual ad callbacks)
+        setTimeout(() => setAdLoaded(true), 1000);
+      } else {
+        setAdError(true);
+      }
+    } catch (err) {
+      console.error('AdSense error:', err);
+      setAdError(true);
+    }
+  };
+
+  // Small delay to ensure DOM is ready
+  const timer = setTimeout(loadAd, 300);
+  return () => clearTimeout(timer);
+}, [showAd]);
+
+
+
+return (
+  <div className="w-full max-w-md mx-auto">
+    <div className="glass-card rounded-3xl p-8 shadow-lg">
+      <div className="text-center mb-6">
+        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Coins className="w-8 h-8 text-primary" />
         </div>
-        {showAd && (
-        <div ref={adContainerRef} className="my-4">
-          <ins 
-                      className="adsbygoogle"
-     style={{ display: 'block' }}
-     data-ad-client="ca-pub-5478626290073215"
-     data-ad-slot="7643212953"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
+        <h2 className="text-2xl font-bold">Hero Coin Mining</h2>
+        <p className="text-muted-foreground mt-2">
+          Watch ads to earn Hero Coins
+        </p>
+      </div>
+
+      {showAd && (
+        <div ref={adContainerRef} className="my-4 min-h-[250px] flex items-center justify-center">
+          {adError ? (
+            <div className="text-center p-4 bg-red-50 rounded-lg">
+              <p className="text-red-600">Ad failed to load</p>
+              <Button 
+                variant="outline" 
+                className="mt-2"
+                onClick={() => {
+                  setAdError(false);
+                  startMining();
+                }}
+              >
+                Try Again
+              </Button>
+            </div>
+          ) : !adLoaded ? (
+            <div className="text-center">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+              <p>Loading ad...</p>
+            </div>
+          ) : (
+            <>
+              {/* AdSense Ad Unit - JSX version */}
+              <ins
+                className="adsbygoogle"
+                style={{ display: 'block' }}
+                data-ad-client="ca-pub-5478626290073215"
+                data-ad-slot="7643212953"
+                data-ad-format="auto"
+                data-full-width-responsive="true"
+              />
+            </>
+          )}
         </div>
       )}
+
       
         <div className="space-y-6">
           {/* Mining progress */}
