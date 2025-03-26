@@ -865,8 +865,6 @@
 //   );
 // };
 
-// export default MiningCard;
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { PlayCircle, Clock, Loader2, Coins, LogIn } from 'lucide-react';
@@ -876,9 +874,11 @@ import { Link } from 'react-router-dom';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, increment, collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
+// Extend Window interface
 declare global {
   interface Window {
-    popunder: any;
+    popParams?: any;
+    popunder?: any;
   }
 }
 
@@ -887,6 +887,7 @@ const MiningCard = () => {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [adWatched, setAdWatched] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [adScriptLoaded, setAdScriptLoaded] = useState(false);
   
   const { user } = useAuth();
 
@@ -951,24 +952,49 @@ const MiningCard = () => {
 
   const loadAdsterraScript = () => {
     return new Promise<void>((resolve, reject) => {
+      // If already loaded and popunder is available
       if (window.popunder) {
         resolve();
         return;
       }
 
+      // If script is already in the DOM but popunder isn't available yet
+      if (adScriptLoaded) {
+        const checkInterval = setInterval(() => {
+          if (window.popunder) {
+            clearInterval(checkInterval);
+            resolve();
+          }
+        }, 100);
+
+        // Timeout after 3 seconds
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          reject(new Error('Adsterra popunder not available after script load'));
+        }, 3000);
+        return;
+      }
+
+      // Load the script
       const script = document.createElement('script');
       script.src = '//pl26224475.effectiveratecpm.com/95/9b/be/959bbed0b4d44c279370c930a2fdefc9.js';
       script.async = true;
       
       script.onload = () => {
-        // Small delay to ensure the script is fully loaded
-        setTimeout(() => {
+        setAdScriptLoaded(true);
+        // Check for popunder availability with retries
+        const checkInterval = setInterval(() => {
           if (window.popunder) {
+            clearInterval(checkInterval);
             resolve();
-          } else {
-            reject(new Error('Adsterra script loaded but popunder not available'));
           }
-        }, 500);
+        }, 100);
+
+        // Timeout after 3 seconds
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          reject(new Error('Adsterra popunder not available after script load'));
+        }, 3000);
       };
 
       script.onerror = () => {
@@ -984,20 +1010,29 @@ const MiningCard = () => {
     try {
       await loadAdsterraScript();
       
+      // Initialize popunder parameters
+      window.popParams = {
+        under: true, // Open as popunder
+        rel: 'nofollow',
+        position: 'center',
+        width: 800,
+        height: 600
+      };
+
       // Trigger the popunder ad
       window.popunder = window.popunder || [];
       window.popunder.push({
         url: 'https://www.adsterra.com', // Adsterra URL or your tracking URL
-        where: 'background' // 'background' for popunder, 'front' for popup
+        where: 'under' // 'under' for popunder
       });
 
-      // Simulate ad watching time (minimum 5 seconds)
+      // Simulate minimum ad watching time (5 seconds)
       await new Promise(resolve => setTimeout(resolve, 5000));
       
       return true;
     } catch (error) {
       console.error('Error showing ad:', error);
-      toast.error('Failed to load advertisement');
+      toast.error('Failed to load advertisement. Please try again.');
       return false;
     } finally {
       setIsLoading(false);
