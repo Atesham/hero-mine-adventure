@@ -260,8 +260,7 @@
 // export default MiningCard;
 
 
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { PlayCircle, Clock, Loader2, Coins, LogIn, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -275,67 +274,95 @@ const MiningCard = () => {
   const [isMining, setIsMining] = useState(false);
   const [progress, setProgress] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
-  const [adWindow, setAdWindow] = useState<Window | null>(null);
   const [earlyCloseWarning, setEarlyCloseWarning] = useState(false);
   const { user } = useAuth();
+  
+  // Use refs to track state that shouldn't trigger re-renders
+  const adWindowRef = useRef<Window | null>(null);
+  const miningCompletedRef = useRef(false);
+  const checkIntervalRef = useRef<NodeJS.Timeout>();
+  const progressIntervalRef = useRef<NodeJS.Timeout>();
 
   // Check cooldown on mount
   useEffect(() => {
     if (!user) return;
+
     const checkCooldown = async () => {
-      const userRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userRef);
-      if (userDoc.exists() && userDoc.data()?.lastMiningTime?.toDate()) {
-        const cooldownEnd = new Date(userDoc.data().lastMiningTime.toDate().getTime() + (24 * 60 * 60 * 1000));
-        if (cooldownEnd > new Date()) {
-          setTimeRemaining(Math.ceil((cooldownEnd.getTime() - Date.now()) / 1000));
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const lastMiningTime = userData.lastMiningTime?.toDate();
+
+          if (lastMiningTime) {
+            const cooldownEnd = new Date(lastMiningTime.getTime() + (24 * 60 * 60 * 1000));
+            const now = new Date();
+
+            if (cooldownEnd > now) {
+              setTimeRemaining(Math.ceil((cooldownEnd.getTime() - now.getTime()) / 1000));
+            }
+          }
         }
+      } catch (error) {
+        console.error('Error checking cooldown:', error);
       }
     };
+
     checkCooldown();
   }, [user]);
 
   // Handle cooldown timer
   useEffect(() => {
-    if (!timeRemaining) return;
-    const interval = setInterval(() => {
-      setTimeRemaining(prev => prev && prev > 0 ? prev - 1 : null);
-    }, 1000);
-    return () => clearInterval(interval);
+    let interval: NodeJS.Timeout;
+
+    if (timeRemaining && timeRemaining > 0) {
+      interval = setInterval(() => {
+        setTimeRemaining((prev) => (prev && prev > 0 ? prev - 1 : null));
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [timeRemaining]);
+
+  // Cleanup intervals on unmount
+  useEffect(() => {
+    return () => {
+      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      if (adWindowRef.current && !adWindowRef.current.closed) {
+        adWindowRef.current.close();
+      }
+    };
+  }, []);
 
   // Mining progress animation (25 seconds)
   useEffect(() => {
     if (!isMining) return;
-    
-    let progressInterval: NodeJS.Timeout;
-    let elapsed = 0;
+
+    miningCompletedRef.current = false;
+    let startTime = Date.now();
     const duration = 25000; // 25 seconds
 
     const updateProgress = () => {
-      elapsed += 100;
+      const elapsed = Date.now() - startTime;
       const newProgress = Math.min((elapsed / duration) * 100, 100);
       setProgress(newProgress);
-      if (newProgress >= 100) completeMining();
+
+      if (newProgress >= 100 && !miningCompletedRef.current) {
+        completeMining();
+        miningCompletedRef.current = true;
+      }
     };
 
-    progressInterval = setInterval(updateProgress, 100);
-    return () => clearInterval(progressInterval);
+    progressIntervalRef.current = setInterval(updateProgress, 100);
+    return () => {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    };
   }, [isMining]);
-
-  // Watch for ad window closing
-  useEffect(() => {
-    if (!adWindow || !isMining) return;
-
-    const checkWindow = setInterval(() => {
-      if (adWindow.closed && progress < 100) {
-        handleEarlyClose();
-        clearInterval(checkWindow);
-      }
-    }, 500);
-
-    return () => clearInterval(checkWindow);
-  }, [adWindow, isMining, progress]);
 
   const startMining = () => {
     if (earlyCloseWarning) {
@@ -343,24 +370,37 @@ const MiningCard = () => {
       return;
     }
 
+    if (isMining || timeRemaining) return;
+
     const newWindow = window.open(
       'https://www.effectiveratecpm.com/t3awz5wft?key=1e0a857f316e6d9479594d51d440faab',
       'AdWindow',
-      'width=600,height=800'
+      'width=600,height=800,scrollbars=yes'
     );
 
     if (!newWindow) {
-      toast.error('Please allow pop-ups to mine');
+      toast.error('Please allow pop-ups to continue mining');
       return;
     }
 
-    setAdWindow(newWindow);
+    adWindowRef.current = newWindow;
     setIsMining(true);
     setProgress(0);
     setEarlyCloseWarning(false);
+    miningCompletedRef.current = false;
+
+    // Check if window is closed
+    checkIntervalRef.current = setInterval(() => {
+      if (newWindow.closed && progress < 100) {
+        handleEarlyClose();
+      }
+    }, 500);
   };
 
   const handleEarlyClose = () => {
+    if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    
     setIsMining(false);
     setEarlyCloseWarning(true);
     toast.warning('Ad closed too soon!', {
@@ -370,10 +410,14 @@ const MiningCard = () => {
   };
 
   const completeMining = async () => {
+    if (miningCompletedRef.current) return;
+    miningCompletedRef.current = true;
+
     try {
       const userRef = doc(db, 'users', user!.uid);
-      const randomCoins = Math.floor(Math.random() * 10) + 5;
+      const randomCoins = Math.floor(Math.random() * 10) + 5; // 5-15 coins
 
+      // Use transaction to prevent duplicate rewards
       await updateDoc(userRef, {
         coins: increment(randomCoins),
         totalMined: increment(randomCoins),
@@ -389,12 +433,17 @@ const MiningCard = () => {
       });
 
       setTimeRemaining(24 * 60 * 60);
-      toast.success(`You earned ${randomCoins} coins!`);
+      toast.success(`Mining successful!`, {
+        description: `You've earned ${randomCoins} coins`,
+      });
     } catch (error) {
-      toast.error('Failed to complete mining');
+      console.error('Error updating mining rewards:', error);
+      toast.error('Failed to update mining rewards');
     } finally {
+      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
       setIsMining(false);
-      setAdWindow(null);
+      setProgress(0);
     }
   };
 
@@ -403,7 +452,7 @@ const MiningCard = () => {
     const hours = Math.floor(timeRemaining / 3600);
     const minutes = Math.floor((timeRemaining % 3600) / 60);
     const seconds = timeRemaining % 60;
-    return `${hours}h ${minutes}m ${seconds}s`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
   if (!user) {
@@ -417,7 +466,7 @@ const MiningCard = () => {
           <Button asChild className="rounded-xl">
             <Link to="/login">
               <LogIn className="mr-2 h-5 w-5" />
-              Log In to Mine
+              Log In to Start Mining
             </Link>
           </Button>
         </div>
@@ -432,9 +481,9 @@ const MiningCard = () => {
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Coins className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-2xl font-bold">Mining</h2>
+          <h2 className="text-2xl font-bold">Hero Coin Mining</h2>
           <p className="text-muted-foreground mt-2">
-            {earlyCloseWarning ? 'Complete the ad to earn' : 'Watch ad for 25 seconds'}
+            {earlyCloseWarning ? 'Complete the ad to earn rewards' : 'Watch ad for 25 seconds'}
           </p>
         </div>
 
@@ -446,14 +495,15 @@ const MiningCard = () => {
                 <span>{Math.floor(progress)}%</span>
               </div>
               <Progress value={progress} className="h-2" />
-              <p className="text-xs text-muted-foreground text-center">
-                {earlyCloseWarning ? 'Please don\'t close early' : 'Keep the ad tab open'}
-              </p>
             </div>
           )}
 
-          {timeRemaining && (
+          {timeRemaining !== null && (
             <div className="bg-secondary/50 rounded-xl p-4">
+              <div className="flex items-center mb-2">
+                <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
+                <span className="text-sm font-medium">Next mining available in:</span>
+              </div>
               <div className="text-2xl font-mono text-center font-bold">
                 {formatTimeRemaining()}
               </div>
@@ -462,23 +512,23 @@ const MiningCard = () => {
 
           <Button
             className="w-full rounded-xl py-6 text-lg font-medium"
+            disabled={(isMining && !earlyCloseWarning) || timeRemaining !== null}
             onClick={startMining}
-            disabled={!!timeRemaining || (isMining && !earlyCloseWarning)}
           >
             {earlyCloseWarning ? (
               <>
                 <AlertCircle className="mr-2 h-5 w-5" />
-                Try Again (25s)
+                Try Again
               </>
             ) : isMining ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Mining ({Math.ceil((25000 - progress * 250) / 1000)}s)
+                Mining in Progress
               </>
-            ) : timeRemaining ? (
+            ) : timeRemaining !== null ? (
               <>
                 <Clock className="mr-2 h-5 w-5" />
-                Cooldown Active
+                Cooling Down
               </>
             ) : (
               <>
