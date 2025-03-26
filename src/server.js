@@ -8,8 +8,6 @@ dotenv.config(); // Load .env file at the very beginning
 
 // Initialize Firebase Admin SDK
 import { readFileSync } from 'fs';
-import { debug } from 'console';
-import { convertCompilerOptionsFromJson } from 'typescript';
 const serviceAccount = JSON.parse(readFileSync('./serviceAccountKey.json', 'utf8'));
 
 admin.initializeApp({
@@ -146,7 +144,6 @@ app.post('/api/verify-otp', async (req, res) => {
 
     if (storedOTP === otp.toString()) {
       return res.json({ success: true, message: 'OTP verified.' });
-      
     } else {
       return res.json({ success: false, message: 'Invalid OTP.' });
     }
@@ -156,15 +153,11 @@ app.post('/api/verify-otp', async (req, res) => {
   }
 });
 
-
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-
-
-
 // import express from 'express';
 // import cors from 'cors';
 // import bodyParser from 'body-parser';
