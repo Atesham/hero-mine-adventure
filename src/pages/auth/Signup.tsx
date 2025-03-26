@@ -170,9 +170,6 @@ const handleResendOTP = async (email: string) => {
       <div className="flex min-h-screen flex-1 flex-col justify-center px-6 py-12 lg:px-8">
         <div className="glass-card sm:mx-auto sm:w-full sm:max-w-md p-8 rounded-xl">
           <div className="mb-10 flex flex-col items-center">
-            <Link to="/" className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
-              Hero Coin
-            </Link>
             <h2 className="mt-5 text-center text-2xl font-bold leading-9">
               Create your account
             </h2>
