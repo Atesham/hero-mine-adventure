@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { PlayCircle, Clock, Loader2, Coins, LogIn } from 'lucide-react';
@@ -15,35 +15,38 @@ const MiningCard = () => {
   const [timeRemaining, setTimeRemaining] = useState<null | number>(null);
   const adElementRef = useRef<HTMLDivElement>(null); // Add this line
   const [adWatched, setAdWatched] = useState(0);
+  const resizeObserverRef = useRef<ResizeObserver>();
+
   const { user } = useAuth();
   const [showAd, setShowAd] = useState(false);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
-// Refs
-const adContainerRef = useRef<HTMLDivElement>(null);
-const adRetryTimeoutRef = useRef<NodeJS.Timeout>();
-const adTimeoutRef = useRef<NodeJS.Timeout>();
+  // Refs
+  const adContainerRef = useRef<HTMLDivElement>(null);
+  const adRetryTimeoutRef = useRef<NodeJS.Timeout>();
+  const adTimeoutRef = useRef<NodeJS.Timeout>();
 
 
 
-useAdSense(showAd);  
+  useAdSense(showAd);
 
   useEffect(() => {
     if (!user) return;
-    
+
     // Check cooldown from Firestore
     const checkCooldown = async () => {
       try {
         const userRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userRef);
-        
+
         if (userDoc.exists()) {
           const userData = userDoc.data();
           const lastMiningTime = userData.lastMiningTime?.toDate();
-          
+
           if (lastMiningTime) {
             const cooldownEnd = new Date(lastMiningTime.getTime() + (12 * 60 * 60 * 1000)); // 12 hours cooldown
             const now = new Date();
-            
+
             if (cooldownEnd > now) {
               // Still in cooldown
               setTimeRemaining(Math.ceil((cooldownEnd.getTime() - now.getTime()) / 1000));
@@ -63,13 +66,13 @@ useAdSense(showAd);
         console.error('Error checking cooldown:', error);
       }
     };
-    
+
     checkCooldown();
   }, [user]);
-  
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    
+
     if (isMining) {
       interval = setInterval(() => {
         setProgress((prev) => {
@@ -78,7 +81,7 @@ useAdSense(showAd);
             clearInterval(interval);
             setIsMining(false);
             setAdWatched((prev) => prev + 1);
-            
+
             if (adWatched === 1) {
               // Both ads watched, mining complete
               handleMiningComplete();
@@ -93,15 +96,15 @@ useAdSense(showAd);
         });
       }, 50);
     }
-    
+
     return () => {
       if (interval) clearInterval(interval);
     };
   }, [isMining, adWatched]);
-  
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    
+
     if (timeRemaining && timeRemaining > 0) {
       interval = setInterval(() => {
         setTimeRemaining((prev) => {
@@ -114,23 +117,24 @@ useAdSense(showAd);
         });
       }, 1000);
     }
-    
+
     return () => {
       if (interval) clearInterval(interval);
     };
   }, [timeRemaining]);
-  
+
   const formatTimeRemaining = () => {
     if (timeRemaining === null) return '';
-    
+
     const hours = Math.floor(timeRemaining / 3600);
     const minutes = Math.floor((timeRemaining % 3600) / 60);
     const seconds = timeRemaining % 60;
-    
+
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
 
+  // Start mining function
   const startMining = () => {
     if (!user || isMining || timeRemaining) return;
 
@@ -139,6 +143,7 @@ useAdSense(showAd);
     setAdAttempts(0);
     setAdError(false);
     setAdLoaded(false);
+    setContainerSize({ width: 0, height: 0 });
 
     // Small delay to ensure clean state
     setTimeout(() => {
@@ -147,14 +152,14 @@ useAdSense(showAd);
     }, 100);
   };
 
-  
+
   const handleMiningComplete = async () => {
     if (!user) return;
-    
+
     try {
       // Generate random coin reward (5-15 coins)
       const randomCoins = Math.floor(Math.random() * 11) + 5;
-      
+
       // Update user's coin balance and set cooldown
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, {
@@ -162,7 +167,7 @@ useAdSense(showAd);
         totalMined: increment(randomCoins),
         lastMiningTime: serverTimestamp()
       });
-      
+
       // Add transaction record
       await addDoc(collection(db, 'transactions'), {
         userId: user.uid,
@@ -171,12 +176,12 @@ useAdSense(showAd);
         timestamp: serverTimestamp(),
         description: 'Mining Reward'
       });
-      
+
       // Set cooldown (12 hours)
       const cooldownDuration = 12 * 60 * 60; // 12 hours in seconds
       setTimeRemaining(cooldownDuration);
       setAdWatched(0);
-      
+
       // Show success notification
       toast.success(`Mining successful!`, {
         description: `You've earned ${randomCoins} Hero Coins`
@@ -199,7 +204,7 @@ useAdSense(showAd);
           <p className="text-muted-foreground mb-6">
             You need to be logged in to start mining Hero Coins
           </p>
-          
+
           <Button asChild className="rounded-xl">
             <Link to="/login">
               <LogIn className="mr-2 h-5 w-5" />
@@ -211,40 +216,60 @@ useAdSense(showAd);
     );
   }
 
-  // Add this to your component
+  // Track container size
+  useLayoutEffect(() => {
+    if (!adContainerRef.current || !showAd) return;
+
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      if (width > 0 && height > 0) {
+        setContainerSize({ width, height });
+      }
+    });
+
+    observer.observe(adContainerRef.current);
+    resizeObserverRef.current = observer;
+
+    return () => {
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+      }
+    };
+  }, [showAd]);
+
+
   const [adError, setAdError] = useState(false);
   const [adLoaded, setAdLoaded] = useState(false);
   const [adAttempts, setAdAttempts] = useState(0);
-  
 
-    // Debug function
-    const logAdState = (message: string) => {
-      const adElement = adContainerRef.current?.querySelector('.adsbygoogle');
-      console.log(`[AdDebug] ${message}`, {
-        showAd,
-        adLoaded,
-        adError,
-        adAttempts,
-        adElementExists: !!adElement,
-        adStatus: adElement?.getAttribute('data-adsbygoogle-status'),
-        windowAds: !!window.adsbygoogle,
-        containerReady: !!adContainerRef.current
-      });
-    };
-  
 
- // Cleanup function
- const cleanupAd = () => {
-  if (adTimeoutRef.current) clearTimeout(adTimeoutRef.current);
-  if (adRetryTimeoutRef.current) clearTimeout(adRetryTimeoutRef.current);
-  setAdLoaded(false);
-  setAdError(false);
-};
+  const logAdState = (message: string) => {
+    const adElement = adContainerRef.current?.querySelector('.adsbygoogle');
+    console.log(`[AdDebug] ${message}`, {
+      showAd,
+      adLoaded,
+      adError,
+      adAttempts,
+      containerSize,
+      adElementExists: !!adElement,
+      adStatus: adElement?.getAttribute('data-adsbygoogle-status'),
+      windowAds: !!window.adsbygoogle
+    });
+  };
 
-  // This effect handles the ad loading
+  // Cleanup function
+  const cleanupAd = () => {
+    if (adTimeoutRef.current) clearTimeout(adTimeoutRef.current);
+    if (adRetryTimeoutRef.current) clearTimeout(adRetryTimeoutRef.current);
+    setAdLoaded(false);
+    setAdError(false);
+  };
+
+
+  // Effect to handle ad loading
   useEffect(() => {
     if (!showAd) {
-      cleanupAd();
+      if (adTimeoutRef.current) clearTimeout(adTimeoutRef.current);
       return;
     }
 
@@ -257,12 +282,9 @@ useAdSense(showAd);
       return;
     }
 
-    // Verify container is ready
-    if (!adContainerRef.current) {
-      logAdState('Container not ready - retrying');
-      adRetryTimeoutRef.current = setTimeout(() => {
-        setAdAttempts(prev => prev + 1);
-      }, 500);
+    // Don't try to load ad if container has no size
+    if (containerSize.width === 0) {
+      logAdState('Container has no width - waiting');
       return;
     }
 
@@ -272,19 +294,25 @@ useAdSense(showAd);
           throw new Error('AdSense script not loaded');
         }
 
-        // Clear previous content
-        adContainerRef.current!.innerHTML = '';
+        if (!adContainerRef.current) {
+          throw new Error('Ad container not ready');
+        }
 
-        // Create new ad element
+        // Clear previous content
+        adContainerRef.current.innerHTML = '';
+
+        // Create new ad element with explicit sizes
         const adElement = document.createElement('ins');
         adElement.className = 'adsbygoogle';
         adElement.style.display = 'block';
+        adElement.style.width = `${containerSize.width}px`;
+        adElement.style.height = '250px'; // Fixed height for ad
         adElement.dataset.adClient = 'ca-pub-5478626290073215';
         adElement.dataset.adSlot = '7643212953';
         adElement.dataset.adFormat = 'auto';
         adElement.dataset.fullWidthResponsive = 'true';
-        
-        adContainerRef.current!.appendChild(adElement);
+
+        adContainerRef.current.appendChild(adElement);
 
         logAdState('Pushing new ad');
         (window.adsbygoogle = window.adsbygoogle || []).push({});
@@ -315,11 +343,12 @@ useAdSense(showAd);
     adTimeoutRef.current = setTimeout(loadAd, 100);
 
     return () => {
-      cleanupAd();
+      if (adTimeoutRef.current) clearTimeout(adTimeoutRef.current);
     };
-  }, [showAd, adAttempts]);
+  }, [showAd, adAttempts, containerSize]);
 
-  
+
+
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="glass-card rounded-3xl p-8 shadow-lg">
@@ -334,44 +363,50 @@ useAdSense(showAd);
         </div>
 
         return (
-  <div className="w-full max-w-md mx-auto">
-    <div className="glass-card rounded-3xl p-8 shadow-lg">
-    {showAd && (
-          <div 
-            ref={adContainerRef}
-            className="my-4 min-h-[250px] flex items-center justify-center"
-            key={`ad-container-${adAttempts}`} // Force re-render on retry
-          >
-            {adError ? (
-              <div className="text-center p-4 bg-red-50 rounded-lg">
-                <p className="text-red-600">
-                  {adAttempts >= 3 ? 'Max attempts reached' : 'Ad failed to load'}
-                </p>
-                {adAttempts < 3 && (
-                  <Button 
-                    variant="outline" 
-                    className="mt-2"
-                    onClick={() => {
-                      setAdError(false);
-                      setAdAttempts(prev => prev + 1);
-                    }}
-                  >
-                    Retry ({3 - adAttempts} left)
-                  </Button>
-                )}
+        <div className="w-full max-w-md mx-auto">
+          <div className="glass-card rounded-3xl p-8 shadow-lg">
+            {showAd && (
+              <div
+                ref={adContainerRef}
+                className="my-4 min-h-[250px] flex items-center justify-center w-full"
+                style={{ minWidth: '300px' }} // Ensure minimum width
+                key={`ad-container-${adAttempts}`}
+              >
+                {adError ? (
+                  <div className="text-center p-4 bg-red-50 rounded-lg">
+                    <p className="text-red-600">
+                      {adAttempts >= 3 ? 'Max attempts reached' : 'Ad failed to load'}
+                    </p>
+                    {adAttempts < 3 && (
+                      <Button
+                        variant="outline"
+                        className="mt-2"
+                        onClick={() => {
+                          setAdError(false);
+                          setAdAttempts(prev => prev + 1);
+                        }}
+                      >
+                        Retry ({3 - adAttempts} left)
+                      </Button>
+                    )}
+                  </div>
+                ) : !adLoaded ? (
+                  <div className="text-center">
+                    <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+                    <p>Loading ad... {adAttempts > 0 && `(Attempt ${adAttempts})`}</p>
+                    {containerSize.width === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        Waiting for container to resize...
+                      </p>
+                    )}
+                  </div>
+                ) : null}
               </div>
-            ) : !adLoaded ? (
-              <div className="text-center">
-                <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-                <p>Loading ad... {adAttempts > 0 && `(Attempt ${adAttempts})`}</p>
-              </div>
-            ) : null}
-          </div>
-        )}
+            )}
 
-    </div>
-  </div>
-);
+          </div>
+        </div>
+        );
         <div className="space-y-6">
           {/* Mining progress */}
           {isMining && (
@@ -383,7 +418,7 @@ useAdSense(showAd);
               <Progress value={progress} className="h-2" />
             </div>
           )}
-          
+
           {/* Ads watched counter */}
           <div className="bg-secondary/50 rounded-xl p-4">
             <div className="flex items-center justify-between">
@@ -391,7 +426,7 @@ useAdSense(showAd);
               <span className="text-sm font-semibold">{adWatched}/2</span>
             </div>
           </div>
-          
+
           {/* Cooldown timer */}
           {timeRemaining !== null && (
             <div className="bg-secondary/50 rounded-xl p-4">
@@ -404,9 +439,9 @@ useAdSense(showAd);
               </div>
             </div>
           )}
-          
+
           {/* Start mining button */}
-          <Button 
+          <Button
             className="w-full rounded-xl py-6 text-lg font-medium"
             disabled={isMining || timeRemaining !== null}
             onClick={startMining}
@@ -431,5 +466,6 @@ useAdSense(showAd);
         </div>
       </div>
     </div>
-  );}
+  );
+}
 export default MiningCard;
