@@ -961,9 +961,10 @@ const MiningCard = () => {
 
       // Create script element
       const script = document.createElement('script');
-      script.src = '//pl26224475.effectiveratecpm.com/95/9b/be/959bbed0b4d44c279370c930a2fdefc9.js';
+      // script.src = '//pl26224475.effectiveratecpm.com/95/9b/be/959bbed0b4d44c279370c930a2fdefc9.js';
       script.async = true;
-      
+      <script type='text/javascript' src='//pl26224475.effectiveratecpm.com/95/9b/be/959bbed0b4d44c279370c930a2fdefc9.js'></script>
+
       // Set up parameters before loading script
       window.popParams = {
         under: true,
