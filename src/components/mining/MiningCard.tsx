@@ -25,6 +25,8 @@ const MiningCard = () => {
   const adContainerRef = useRef<HTMLDivElement>(null);
   const adRetryTimeoutRef = useRef<NodeJS.Timeout>();
   const adTimeoutRef = useRef<NodeJS.Timeout>();
+  const currentAdRef = useRef<HTMLElement | null>(null);
+
 
 
 
@@ -136,21 +138,20 @@ const MiningCard = () => {
 
   // Start mining function
   const startMining = () => {
-    if (!user || isMining || timeRemaining) return;
+    if (isMining || timeRemaining) return;
 
     // Reset state for new attempt
     setShowAd(false);
     setAdAttempts(0);
     setAdError(false);
     setAdLoaded(false);
-    setContainerSize({ width: 0, height: 0 });
 
     // Small delay to ensure clean state
     setTimeout(() => {
       setShowAd(true);
-      toast.info('Loading ad...');
     }, 100);
   };
+
 
 
   const handleMiningComplete = async () => {
@@ -265,26 +266,50 @@ const MiningCard = () => {
     setAdError(false);
   };
 
+   // Track container size
+   useLayoutEffect(() => {
+    if (!adContainerRef.current || !showAd) return;
+
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      if (width > 0 && height > 0) {
+        setContainerSize({ width, height });
+      }
+    });
+
+    observer.observe(adContainerRef.current);
+    resizeObserverRef.current = observer;
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [showAd]);
+
 
   // Effect to handle ad loading
   useEffect(() => {
     if (!showAd) {
-      if (adTimeoutRef.current) clearTimeout(adTimeoutRef.current);
+      cleanupAd();
+      setAdLoaded(false);
+      setAdError(false);
       return;
     }
 
-    logAdState('Effect triggered');
+    console.log('[AdDebug] Effect triggered', {
+      containerSize,
+      adAttempts,
+      hasAd: !!currentAdRef.current
+    });
 
-    // If we've tried too many times, show error
     if (adAttempts >= 3) {
-      logAdState('Max attempts reached');
+      console.log('[AdDebug] Max attempts reached');
       setAdError(true);
       return;
     }
 
     // Don't try to load ad if container has no size
     if (containerSize.width === 0) {
-      logAdState('Container has no width - waiting');
+      console.log('[AdDebug] Waiting for container sizing');
       return;
     }
 
@@ -298,44 +323,49 @@ const MiningCard = () => {
           throw new Error('Ad container not ready');
         }
 
-        // Clear previous content
-        adContainerRef.current.innerHTML = '';
+        // Cleanup previous ad
+        cleanupAd();
 
-        // Create new ad element with explicit sizes
+        // Create new ad element
         const adElement = document.createElement('ins');
         adElement.className = 'adsbygoogle';
         adElement.style.display = 'block';
-        adElement.style.width = `${containerSize.width}px`;
-        adElement.style.height = '250px'; // Fixed height for ad
+        adElement.style.width = `${Math.min(containerSize.width, 1200)}px`;
+        adElement.style.height = '250px';
+        adElement.style.maxWidth = '100%';
         adElement.dataset.adClient = 'ca-pub-5478626290073215';
         adElement.dataset.adSlot = '7643212953';
         adElement.dataset.adFormat = 'auto';
         adElement.dataset.fullWidthResponsive = 'true';
 
         adContainerRef.current.appendChild(adElement);
+        currentAdRef.current = adElement;
 
-        logAdState('Pushing new ad');
+        console.log('[AdDebug] Pushing new ad');
         (window.adsbygoogle = window.adsbygoogle || []).push({});
 
         // Verify ad loaded
         adTimeoutRef.current = setTimeout(() => {
-          const currentAd = adContainerRef.current?.querySelector('.adsbygoogle');
-          if (currentAd?.getAttribute('data-adsbygoogle-status') === 'done') {
-            logAdState('Ad loaded successfully');
+          const status = adElement.getAttribute('data-adsbygoogle-status');
+          console.log('[AdDebug] Ad status check:', status);
+          
+          if (status === 'done') {
+            console.log('[AdDebug] Ad loaded successfully');
             setAdLoaded(true);
             setAdError(false);
           } else {
-            logAdState('Ad failed to load within timeout');
+            console.log('[AdDebug] Ad failed to load');
             setAdError(true);
             setAdAttempts(prev => prev + 1);
+            cleanupAd();
           }
         }, 3000);
 
       } catch (err) {
-        console.error('AdSense error:', err);
-        logAdState(`Error: ${err.message}`);
+        console.error('[AdDebug] AdSense error:', err);
         setAdError(true);
         setAdAttempts(prev => prev + 1);
+        cleanupAd();
       }
     };
 
@@ -343,12 +373,11 @@ const MiningCard = () => {
     adTimeoutRef.current = setTimeout(loadAd, 100);
 
     return () => {
-      if (adTimeoutRef.current) clearTimeout(adTimeoutRef.current);
+      cleanupAd();
     };
   }, [showAd, adAttempts, containerSize]);
 
-
-
+  
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="glass-card rounded-3xl p-8 shadow-lg">
@@ -365,45 +394,42 @@ const MiningCard = () => {
         return (
         <div className="w-full max-w-md mx-auto">
           <div className="glass-card rounded-3xl p-8 shadow-lg">
-            {showAd && (
-              <div
-                ref={adContainerRef}
-                className="my-4 min-h-[250px] flex items-center justify-center w-full"
-                style={{ minWidth: '300px' }} // Ensure minimum width
-                key={`ad-container-${adAttempts}`}
-              >
-                {adError ? (
-                  <div className="text-center p-4 bg-red-50 rounded-lg">
-                    <p className="text-red-600">
-                      {adAttempts >= 3 ? 'Max attempts reached' : 'Ad failed to load'}
-                    </p>
-                    {adAttempts < 3 && (
-                      <Button
-                        variant="outline"
-                        className="mt-2"
-                        onClick={() => {
-                          setAdError(false);
-                          setAdAttempts(prev => prev + 1);
-                        }}
-                      >
-                        Retry ({3 - adAttempts} left)
-                      </Button>
-                    )}
-                  </div>
-                ) : !adLoaded ? (
-                  <div className="text-center">
-                    <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-                    <p>Loading ad... {adAttempts > 0 && `(Attempt ${adAttempts})`}</p>
-                    {containerSize.width === 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        Waiting for container to resize...
-                      </p>
-                    )}
-                  </div>
-                ) : null}
-              </div>
-            )}
 
+          {showAd && (
+          <div 
+            ref={adContainerRef}
+            className="my-4 min-h-[250px] flex items-center justify-center w-full bg-gray-100 rounded-lg"
+            style={{ minWidth: '300px' }}
+            key={`ad-container-${adAttempts}`}
+          >
+            {adError ? (
+              <div className="text-center p-4">
+                <p className="text-red-600">
+                  {adAttempts >= 3 ? 'Maximum attempts reached' : 'Ad failed to load'}
+                </p>
+                {adAttempts < 3 && (
+                  <button 
+                    onClick={() => {
+                      setAdError(false);
+                      setAdAttempts(prev => prev + 1);
+                    }}
+                    className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
+                  >
+                    Retry ({3 - adAttempts} left)
+                  </button>
+                )}
+              </div>
+            ) : !adLoaded ? (
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                <p>Loading advertisement...</p>
+                {containerSize.width === 0 && (
+                  <p className="text-sm text-gray-500">Initializing container...</p>
+                )}
+              </div>
+            ) : null}
+          </div>
+        )}
           </div>
         </div>
         );
