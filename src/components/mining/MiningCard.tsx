@@ -13,6 +13,8 @@ const MiningCard = () => {
   const [isMining, setIsMining] = useState(false);
   const [progress, setProgress] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState<null | number>(null);
+  const adElementRef = useRef<HTMLDivElement>(null); // Add this line
+
   const [adWatched, setAdWatched] = useState(0);
   const { user } = useAuth();
   const [showAd, setShowAd] = useState(false);
@@ -218,20 +220,20 @@ const MiningCard = () => {
   const [adLoaded, setAdLoaded] = useState(false);
   const [adAttempts, setAdAttempts] = useState(0);
   
-  // Debug function to log ad state
-  const logAdState = (message: string) => {
-    const adElement = adContainerRef.current?.querySelector('.adsbygoogle');
-    console.log(`[AdDebug] ${message}`, {
-      showAd,
-      adLoaded,
-      adError,
-      adAttempts,
-      adElementExists: !!adElement,
-      adStatus: adElement?.getAttribute('data-adsbygoogle-status'),
-      windowAds: !!window.adsbygoogle
-    });
-  };
-const adTimeoutRef = useRef<NodeJS.Timeout>();
+// Debug function
+const logAdState = (message: string) => {
+  const adElement = adElementRef.current?.querySelector('.adsbygoogle');
+  console.log(`[AdDebug] ${message}`, {
+    showAd,
+    adLoaded,
+    adError,
+    adAttempts,
+    adElementExists: !!adElement,
+    adStatus: adElement?.getAttribute('data-adsbygoogle-status'),
+    windowAds: !!window.adsbygoogle
+  });
+};
+  const adTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Cleanup function
 const cleanupAd = () => {
@@ -246,23 +248,15 @@ const cleanupAd = () => {
   // This effect handles the ad loading
   useEffect(() => {
     if (!showAd) {
-      cleanupAd();
+      // Cleanup when ad is hidden
+      if (adTimeoutRef.current) clearTimeout(adTimeoutRef.current);
       return;
     }
   
     logAdState('Effect triggered');
   
-    const adElement = adContainerRef.current?.querySelector('.adsbygoogle');
-    
-    // If ad is already loaded successfully, don't reload
-    if (adElement?.getAttribute('data-adsbygoogle-status') === 'done') {
-      logAdState('Ad already loaded successfully');
-      setAdLoaded(true);
-      return;
-    }
-  
     // If we've tried too many times, show error
-    if (adAttempts > 3) {
+    if (adAttempts >= 3) {
       logAdState('Max attempts reached');
       setAdError(true);
       return;
@@ -274,42 +268,57 @@ const cleanupAd = () => {
           throw new Error('AdSense script not loaded');
         }
   
-        if (!adElement) {
-          throw new Error('Ad element not found');
+        // Create new ad container if needed
+        if (!adElementRef.current) {
+          throw new Error('Ad container not ready');
         }
   
-        // Only push if not already loading/loaded
-        if (!adElement.getAttribute('data-adsbygoogle-status')) {
-          logAdState('Pushing new ad');
-          (window.adsbygoogle = window.adsbygoogle || []).push({});
-          
-          // Verify ad loaded
-          adTimeoutRef.current = setTimeout(() => {
-            if (adElement.getAttribute('data-adsbygoogle-status') === 'done') {
-              logAdState('Ad loaded successfully');
-              setAdLoaded(true);
-            } else {
-              logAdState('Ad failed to load within timeout');
-              setAdError(true);
-            }
-          }, 3000);
-        }
+        // Clear previous ad element
+        adElementRef.current.innerHTML = '';
+  
+        // Create new ad element
+        const adElement = document.createElement('ins');
+        adElement.className = 'adsbygoogle';
+        adElement.style.display = 'block';
+        adElement.dataset.adClient = 'ca-pub-5478626290073215';
+        adElement.dataset.adSlot = '7643212953';
+        adElement.dataset.adFormat = 'auto';
+        adElement.dataset.fullWidthResponsive = 'true';
+        
+        adElementRef.current.appendChild(adElement);
+  
+        logAdState('Pushing new ad');
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+  
+        // Verify ad loaded
+        adTimeoutRef.current = setTimeout(() => {
+          if (adElement.getAttribute('data-adsbygoogle-status') === 'done') {
+            logAdState('Ad loaded successfully');
+            setAdLoaded(true);
+            setAdError(false);
+          } else {
+            logAdState('Ad failed to load within timeout');
+            setAdError(true);
+            setAdAttempts(prev => prev + 1);
+          }
+        }, 3000);
+  
       } catch (err) {
         console.error('AdSense error:', err);
         logAdState(`Error: ${err.message}`);
         setAdError(true);
+        setAdAttempts(prev => prev + 1);
       }
     };
   
     // Delay to ensure DOM is ready
-    adTimeoutRef.current = setTimeout(() => {
-      setAdAttempts(prev => prev + 1);
-      loadAd();
-    }, 500);
+    adTimeoutRef.current = setTimeout(loadAd, 500);
   
-    return cleanupAd;
+    return () => {
+      if (adTimeoutRef.current) clearTimeout(adTimeoutRef.current);
+    };
   }, [showAd, adAttempts]);
-  
+   
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="glass-card rounded-3xl p-8 shadow-lg">
@@ -322,12 +331,10 @@ const cleanupAd = () => {
             Watch ads to earn Hero Coins
           </p>
         </div>
-  
+
         return (
   <div className="w-full max-w-md mx-auto">
     <div className="glass-card rounded-3xl p-8 shadow-lg">
-      {/* ... other components ... */}
-
       {showAd && (
         <div ref={adContainerRef} className="my-4 min-h-[250px] flex items-center justify-center">
           {adError ? (
@@ -367,7 +374,6 @@ const cleanupAd = () => {
         </div>
       )}
 
-      {/* ... rest of your component ... */}
     </div>
   </div>
 );
