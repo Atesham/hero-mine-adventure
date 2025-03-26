@@ -23,6 +23,8 @@ const MiningCard = () => {
 
   // Refs
   const adContainerRef = useRef<HTMLDivElement>(null);
+  const mountedRef = useRef(true);
+
   const adRetryTimeoutRef = useRef<NodeJS.Timeout>();
   const adTimeoutRef = useRef<NodeJS.Timeout>();
   const currentAdRef = useRef<HTMLElement | null>(null);
@@ -136,19 +138,17 @@ const MiningCard = () => {
   };
 
 
-  // Start mining function
   const startMining = () => {
-    if (isMining || timeRemaining) return;
-
-    // Reset state for new attempt
     setShowAd(false);
     setAdAttempts(0);
     setAdError(false);
     setAdLoaded(false);
+    setContainerReady(false);
 
-    // Small delay to ensure clean state
     setTimeout(() => {
-      setShowAd(true);
+      if (mountedRef.current) {
+        setShowAd(true);
+      }
     }, 100);
   };
 
@@ -242,29 +242,33 @@ const MiningCard = () => {
   const [adError, setAdError] = useState(false);
   const [adLoaded, setAdLoaded] = useState(false);
   const [adAttempts, setAdAttempts] = useState(0);
+  const [containerReady, setContainerReady] = useState(false);
 
-
-  const logAdState = (message: string) => {
-    const adElement = adContainerRef.current?.querySelector('.adsbygoogle');
+  // Debug function
+  const logAdState = (message: string, extra = {}) => {
     console.log(`[AdDebug] ${message}`, {
       showAd,
       adLoaded,
       adError,
       adAttempts,
-      containerSize,
-      adElementExists: !!adElement,
-      adStatus: adElement?.getAttribute('data-adsbygoogle-status'),
-      windowAds: !!window.adsbygoogle
+      containerReady,
+      hasAd: !!currentAdRef.current,
+      ...extra
     });
   };
 
-  // Cleanup function
-  const cleanupAd = () => {
-    if (adTimeoutRef.current) clearTimeout(adTimeoutRef.current);
-    if (adRetryTimeoutRef.current) clearTimeout(adRetryTimeoutRef.current);
-    setAdLoaded(false);
-    setAdError(false);
-  };
+// Cleanup function
+const cleanupAd = () => {
+  if (adTimeoutRef.current) {
+    clearTimeout(adTimeoutRef.current);
+    adTimeoutRef.current = undefined;
+  }
+  
+  if (currentAdRef.current && adContainerRef.current?.contains(currentAdRef.current)) {
+    adContainerRef.current.removeChild(currentAdRef.current);
+  }
+  currentAdRef.current = null;
+};
 
    // Track container size
    useLayoutEffect(() => {
@@ -286,98 +290,111 @@ const MiningCard = () => {
   }, [showAd]);
 
 
-  // Effect to handle ad loading
-  useEffect(() => {
-    if (!showAd) {
-      cleanupAd();
-      setAdLoaded(false);
-      setAdError(false);
+
+  // Track container readiness
+  useLayoutEffect(() => {
+    if (!adContainerRef.current || !showAd) {
+      setContainerReady(false);
       return;
     }
 
-    console.log('[AdDebug] Effect triggered', {
-      containerSize,
-      adAttempts,
-      hasAd: !!currentAdRef.current
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      if (width > 50 && height > 50 && mountedRef.current) {
+        setContainerReady(true);
+      }
     });
 
-    if (adAttempts >= 3) {
-      console.log('[AdDebug] Max attempts reached');
-      setAdError(true);
-      return;
-    }
-
-    // Don't try to load ad if container has no size
-    if (containerSize.width === 0) {
-      console.log('[AdDebug] Waiting for container sizing');
-      return;
-    }
-
-    const loadAd = () => {
-      try {
-        if (!window.adsbygoogle) {
-          throw new Error('AdSense script not loaded');
-        }
-
-        if (!adContainerRef.current) {
-          throw new Error('Ad container not ready');
-        }
-
-        // Cleanup previous ad
-        cleanupAd();
-
-        // Create new ad element
-        const adElement = document.createElement('ins');
-        adElement.className = 'adsbygoogle';
-        adElement.style.display = 'block';
-        adElement.style.width = `${Math.min(containerSize.width, 1200)}px`;
-        adElement.style.height = '250px';
-        adElement.style.maxWidth = '100%';
-        adElement.dataset.adClient = 'ca-pub-5478626290073215';
-        adElement.dataset.adSlot = '7643212953';
-        adElement.dataset.adFormat = 'auto';
-        adElement.dataset.fullWidthResponsive = 'true';
-
-        adContainerRef.current.appendChild(adElement);
-        currentAdRef.current = adElement;
-
-        console.log('[AdDebug] Pushing new ad');
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-
-        // Verify ad loaded
-        adTimeoutRef.current = setTimeout(() => {
-          const status = adElement.getAttribute('data-adsbygoogle-status');
-          console.log('[AdDebug] Ad status check:', status);
-          
-          if (status === 'done') {
-            console.log('[AdDebug] Ad loaded successfully');
-            setAdLoaded(true);
-            setAdError(false);
-          } else {
-            console.log('[AdDebug] Ad failed to load');
-            setAdError(true);
-            setAdAttempts(prev => prev + 1);
-            cleanupAd();
-          }
-        }, 3000);
-
-      } catch (err) {
-        console.error('[AdDebug] AdSense error:', err);
-        setAdError(true);
-        setAdAttempts(prev => prev + 1);
-        cleanupAd();
-      }
-    };
-
-    // Delay to ensure DOM is ready
-    adTimeoutRef.current = setTimeout(loadAd, 100);
+    observer.observe(adContainerRef.current);
 
     return () => {
+      observer.disconnect();
+      mountedRef.current = false;
+    };
+  }, [showAd]);
+
+
+  // Effect to handle ad loading
+  useEffect(() => {
+    mountedRef.current = true;
+    
+    return () => {
+      mountedRef.current = false;
       cleanupAd();
     };
-  }, [showAd, adAttempts, containerSize]);
+  }, []);
 
-  
+ // Main ad loading effect
+ useEffect(() => {
+  if (!showAd || !containerReady) {
+    cleanupAd();
+    return;
+  }
+
+  logAdState('Effect triggered', { containerReady });
+
+  if (adAttempts >= 3) {
+    logAdState('Max attempts reached');
+    setAdError(true);
+    return;
+  }
+
+  const loadAd = () => {
+    try {
+      if (!window.adsbygoogle) {
+        throw new Error('AdSense script not loaded');
+      }
+
+      cleanupAd();
+
+      const adElement = document.createElement('ins');
+      adElement.className = 'adsbygoogle';
+      adElement.style.display = 'block';
+      adElement.style.width = '100%';
+      adElement.style.minWidth = '300px';
+      adElement.style.height = '250px';
+      adElement.dataset.adClient = 'ca-pub-5478626290073215';
+      adElement.dataset.adSlot = '7643212953';
+      adElement.dataset.adFormat = 'auto';
+      adElement.dataset.fullWidthResponsive = 'true';
+
+      adContainerRef.current?.appendChild(adElement);
+      currentAdRef.current = adElement;
+
+      logAdState('Pushing new ad');
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+
+      adTimeoutRef.current = setTimeout(() => {
+        if (!mountedRef.current) return;
+        
+        const status = adElement.getAttribute('data-adsbygoogle-status');
+        logAdState('Ad status check', { status });
+
+        if (status === 'done') {
+          logAdState('Ad loaded successfully');
+          setAdLoaded(true);
+          setAdError(false);
+        } else {
+          logAdState('Ad failed to load');
+          setAdError(true);
+          setAdAttempts(prev => prev + 1);
+          cleanupAd();
+        }
+      }, 3000);
+
+    } catch (err) {
+      logAdState(`Error: ${err.message}`);
+      setAdError(true);
+      setAdAttempts(prev => prev + 1);
+      cleanupAd();
+    }
+  };
+
+  adTimeoutRef.current = setTimeout(loadAd, 100);
+
+  return cleanupAd;
+}, [showAd, adAttempts, containerReady]);
+
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="glass-card rounded-3xl p-8 shadow-lg">
@@ -395,41 +412,44 @@ const MiningCard = () => {
         <div className="w-full max-w-md mx-auto">
           <div className="glass-card rounded-3xl p-8 shadow-lg">
 
+        
+
+
           {showAd && (
-          <div 
+          <div
             ref={adContainerRef}
-            className="my-4 min-h-[250px] flex items-center justify-center w-full bg-gray-100 rounded-lg"
+            className="my-4 min-h-[250px] flex items-center justify-center w-full bg-gray-50 rounded-lg"
             style={{ minWidth: '300px' }}
             key={`ad-container-${adAttempts}`}
           >
             {adError ? (
               <div className="text-center p-4">
                 <p className="text-red-600">
-                  {adAttempts >= 3 ? 'Maximum attempts reached' : 'Ad failed to load'}
+                  {adAttempts >= 3 ? 'Ad loading failed' : 'Error loading ad'}
                 </p>
                 {adAttempts < 3 && (
-                  <button 
-                    onClick={() => {
-                      setAdError(false);
-                      setAdAttempts(prev => prev + 1);
-                    }}
-                    className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
+                  <button
+                    onClick={() => setAdAttempts(prev => prev + 1)}
+                    className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
                   >
-                    Retry ({3 - adAttempts} left)
+                    Try Again
                   </button>
                 )}
               </div>
             ) : !adLoaded ? (
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-                <p>Loading advertisement...</p>
-                {containerSize.width === 0 && (
-                  <p className="text-sm text-gray-500">Initializing container...</p>
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                <p className="mt-2">Loading advertisement</p>
+                {!containerReady && (
+                  <p className="text-sm text-gray-500 mt-1">Preparing container...</p>
                 )}
               </div>
             ) : null}
           </div>
         )}
+
+
+
           </div>
         </div>
         );
