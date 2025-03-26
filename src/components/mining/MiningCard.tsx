@@ -516,29 +516,378 @@
 // export default MiningCard;
 
 
+//---------------------------------------------------------------------------------------------------------------------------------------------------------------//
 
-import React, { useState, useEffect, useRef } from 'react';
+
+//---------------------------------------------------------------------------------------------------------------------------------------------------------------//
+
+// import React, { useState, useEffect, useRef } from 'react';
+// import { Button } from '@/components/ui/button';
+// import { Progress } from '@/components/ui/progress';
+// import { PlayCircle, Clock, Loader2, Coins, LogIn, X } from 'lucide-react';
+// import { toast } from 'sonner';
+// import { useAuth } from '@/contexts/AuthContext';
+// import { Link, useNavigate } from 'react-router-dom';
+// import { doc, getDoc, setDoc, updateDoc, serverTimestamp, increment, collection, addDoc } from 'firebase/firestore';
+// import { db } from '@/lib/firebase';
+
+// const MiningCard = () => {
+//   const [isMining, setIsMining] = useState(false);
+//   const [progress, setProgress] = useState(0);
+//   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+//   const [adWatched, setAdWatched] = useState(0);
+//   const [showAdPage, setShowAdPage] = useState(false);
+//   const [canCloseAd, setCanCloseAd] = useState(false);
+//   const [adError, setAdError] = useState(false);
+//   const [adLoading, setAdLoading] = useState(false);
+  
+//   const adContainerRef = useRef<HTMLDivElement>(null);
+//   const navigate = useNavigate();
+//   const { user } = useAuth();
+
+//   // Check cooldown on mount
+//   useEffect(() => {
+//     if (!user) return;
+
+//     const checkCooldown = async () => {
+//       try {
+//         const userRef = doc(db, 'users', user.uid);
+//         const userDoc = await getDoc(userRef);
+
+//         if (userDoc.exists()) {
+//           const userData = userDoc.data();
+//           const lastMiningTime = userData.lastMiningTime?.toDate();
+
+//           if (lastMiningTime) {
+//             const cooldownEnd = new Date(lastMiningTime.getTime() + (12 * 60 * 60 * 1000));
+//             const now = new Date();
+
+//             if (cooldownEnd > now) {
+//               setTimeRemaining(Math.ceil((cooldownEnd.getTime() - now.getTime()) / 1000));
+//             }
+//           }
+//         } else {
+//           await setDoc(userRef, {
+//             displayName: user.displayName || user.email?.split('@')[0],
+//             email: user.email,
+//             coins: 0,
+//             totalMined: 0,
+//             createdAt: serverTimestamp(),
+//           });
+//         }
+//       } catch (error) {
+//         console.error('Error checking cooldown:', error);
+//       }
+//     };
+
+//     checkCooldown();
+//   }, [user]);
+
+//   // Handle cooldown timer
+//   useEffect(() => {
+//     let interval: NodeJS.Timeout;
+
+//     if (timeRemaining && timeRemaining > 0) {
+//       interval = setInterval(() => {
+//         setTimeRemaining((prev) => {
+//           if (prev === null || prev <= 1) {
+//             clearInterval(interval);
+//             return null;
+//           }
+//           return prev - 1;
+//         });
+//       }, 1000);
+//     }
+
+//     return () => {
+//       if (interval) clearInterval(interval);
+//     };
+//   }, [timeRemaining]);
+
+//   // Load Adsterra popunder ad when showAdPage is true
+//   useEffect(() => {
+//     if (!showAdPage || !user) return;
+
+//     const loadAdsterraAd = () => {
+//       setAdLoading(true);
+//       setAdError(false);
+//       setCanCloseAd(false);
+
+//       try {
+//         // Create script element for Adsterra
+//         const script = document.createElement('script');
+//         script.type = 'text/javascript';
+//         script.src = '//pl26224475.effectiveratecpm.com/95/9b/be/959bbed0b4d44c279370c930a2fdefc9.js';
+//         script.async = true;
+        
+//         script.onload = () => {
+//           // Ad loaded successfully
+//           setAdLoading(false);
+          
+//           // Allow closing after 30 seconds (minimum ad watch time)
+//           setTimeout(() => {
+//             setCanCloseAd(true);
+//           }, 30000);
+//         };
+
+//         script.onerror = () => {
+//           setAdError(true);
+//           setAdLoading(false);
+//         };
+
+//         if (adContainerRef.current) {
+//           adContainerRef.current.innerHTML = '';
+//           adContainerRef.current.appendChild(script);
+//         }
+
+//         return () => {
+//           // Cleanup
+//           if (adContainerRef.current) {
+//             adContainerRef.current.innerHTML = '';
+//           }
+//         };
+//       } catch (error) {
+//         console.error('Error loading Adsterra ad:', error);
+//         setAdError(true);
+//         setAdLoading(false);
+//       }
+//     };
+
+//     // Small delay to ensure container is ready
+//     const timer = setTimeout(loadAdsterraAd, 300);
+
+//     return () => {
+//       clearTimeout(timer);
+//       if (adContainerRef.current) {
+//         adContainerRef.current.innerHTML = '';
+//       }
+//     };
+//   }, [showAdPage, user]);
+
+//   const startMining = () => {
+//     if (timeRemaining !== null) return;
+//     setShowAdPage(true);
+//   };
+
+//   const handleAdComplete = () => {
+//     setShowAdPage(false);
+//     setAdWatched(prev => prev + 1);
+
+//     if (adWatched + 1 >= 2) {
+//       handleMiningComplete();
+//     } else {
+//       toast.info('Ad completed!', {
+//         description: 'Watch one more ad to complete mining'
+//       });
+//     }
+//   };
+
+//   const handleMiningComplete = async () => {
+//     if (!user) return;
+
+//     setIsMining(true);
+//     try {
+//       const randomCoins = Math.floor(Math.random() * 11) + 5; // 5-15 coins
+
+//       const userRef = doc(db, 'users', user.uid);
+//       await updateDoc(userRef, {
+//         coins: increment(randomCoins),
+//         totalMined: increment(randomCoins),
+//         lastMiningTime: serverTimestamp()
+//       });
+
+//       await addDoc(collection(db, 'transactions'), {
+//         userId: user.uid,
+//         type: 'reward',
+//         amount: randomCoins,
+//         timestamp: serverTimestamp(),
+//         description: 'Mining Reward'
+//       });
+
+//       // Set 12 hour cooldown
+//       setTimeRemaining(12 * 60 * 60);
+//       setAdWatched(0);
+      
+//       toast.success(`Mining successful!`, {
+//         description: `You've earned ${randomCoins} Hero Coins`
+//       });
+//     } catch (error) {
+//       console.error('Error updating mining rewards:', error);
+//       toast.error('Failed to update mining rewards');
+//     } finally {
+//       setIsMining(false);
+//     }
+//   };
+
+//   const formatTimeRemaining = () => {
+//     if (timeRemaining === null) return '';
+
+//     const hours = Math.floor(timeRemaining / 3600);
+//     const minutes = Math.floor((timeRemaining % 3600) / 60);
+//     const seconds = timeRemaining % 60;
+
+//     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+//   };
+
+//   if (!user) {
+//     return (
+//       <div className="w-full max-w-md mx-auto">
+//         <div className="glass-card rounded-3xl p-8 shadow-lg text-center">
+//           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+//             <Coins className="w-8 h-8 text-primary" />
+//           </div>
+//           <h2 className="text-2xl font-bold mb-2">Login Required</h2>
+//           <p className="text-muted-foreground mb-6">
+//             You need to be logged in to start mining Hero Coins
+//           </p>
+//           <Button asChild className="rounded-xl">
+//             <Link to="/login">
+//               <LogIn className="mr-2 h-5 w-5" />
+//               Log In to Start Mining
+//             </Link>
+//           </Button>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   if (showAdPage) {
+//     return (
+//       <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4">
+//         <div className="w-full max-w-4xl bg-white rounded-lg overflow-hidden flex flex-col">
+//           {/* Close button (only visible when ad is complete) */}
+//           {canCloseAd && (
+//             <div className="flex justify-end p-2 bg-gray-100">
+//               <button
+//                 onClick={handleAdComplete}
+//                 className="text-gray-700 hover:text-gray-900 transition"
+//                 aria-label="Close ad"
+//               >
+//                 <X className="h-6 w-6" />
+//               </button>
+//             </div>
+//           )}
+          
+//           {/* Ad container */}
+//           <div 
+//             ref={adContainerRef}
+//             className="flex-1 flex items-center justify-center bg-gray-50 min-h-[250px] w-full"
+//           >
+//             {adLoading && !adError && (
+//               <div className="text-center p-4">
+//                 <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-600" />
+//                 <p className="mt-2 text-gray-600">Loading advertisement...</p>
+//               </div>
+//             )}
+            
+//             {adError && (
+//               <div className="text-center p-4">
+//                 <p className="text-red-600">Failed to load advertisement</p>
+//                 <Button 
+//                   onClick={() => setShowAdPage(false)}
+//                   className="mt-4"
+//                   variant="destructive"
+//                 >
+//                   Go Back
+//                 </Button>
+//               </div>
+//             )}
+//           </div>
+          
+//           {/* Ad status message */}
+//           <div className="p-3 bg-gray-100 text-center border-t">
+//             <p className="text-sm text-gray-600">
+//               {canCloseAd 
+//                 ? "Advertisement completed - you may now close"
+//                 : "Please watch the advertisement to completion (30 seconds)"}
+//             </p>
+//           </div>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="w-full max-w-md mx-auto">
+//       <div className="glass-card rounded-3xl p-8 shadow-lg">
+//         <div className="text-center mb-6">
+//           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+//             <Coins className="w-8 h-8 text-primary" />
+//           </div>
+//           <h2 className="text-2xl font-bold">Hero Coin Mining</h2>
+//           <p className="text-muted-foreground mt-2">
+//             Watch ads to earn Hero Coins (2 ads per session)
+//           </p>
+//         </div>
+
+//         <div className="space-y-6">
+//           <div className="bg-secondary/50 rounded-xl p-4">
+//             <div className="flex items-center justify-between">
+//               <span className="text-sm font-medium">Ads Watched</span>
+//               <span className="text-sm font-semibold">{adWatched}/2</span>
+//             </div>
+//           </div>
+
+//           {timeRemaining !== null && (
+//             <div className="bg-secondary/50 rounded-xl p-4">
+//               <div className="flex items-center mb-2">
+//                 <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
+//                 <span className="text-sm font-medium">Next mining available in:</span>
+//               </div>
+//               <div className="text-2xl font-mono text-center font-bold">
+//                 {formatTimeRemaining()}
+//               </div>
+//             </div>
+//           )}
+
+//           <Button
+//             className="w-full rounded-xl py-6 text-lg font-medium"
+//             disabled={timeRemaining !== null || isMining}
+//             onClick={startMining}
+//           >
+//             {isMining ? (
+//               <Loader2 className="h-5 w-5 animate-spin" />
+//             ) : timeRemaining !== null ? (
+//               <>
+//                 <Clock className="mr-2 h-5 w-5" />
+//                 Cooling Down
+//               </>
+//             ) : (
+//               <>
+//                 <PlayCircle className="mr-2 h-5 w-5" />
+//                 {adWatched === 0 ? 'Start Mining' : 'Watch Next Ad'}
+//               </>
+//             )}
+//           </Button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default MiningCard;
+
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { PlayCircle, Clock, Loader2, Coins, LogIn, X } from 'lucide-react';
+import { PlayCircle, Clock, Loader2, Coins, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, increment, collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
+declare global {
+  interface Window {
+    popunder: any;
+  }
+}
+
 const MiningCard = () => {
   const [isMining, setIsMining] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [adWatched, setAdWatched] = useState(0);
-  const [showAdPage, setShowAdPage] = useState(false);
-  const [canCloseAd, setCanCloseAd] = useState(false);
-  const [adError, setAdError] = useState(false);
-  const [adLoading, setAdLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
-  const adContainerRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   // Check cooldown on mount
@@ -600,77 +949,71 @@ const MiningCard = () => {
     };
   }, [timeRemaining]);
 
-  // Load Adsterra popunder ad when showAdPage is true
-  useEffect(() => {
-    if (!showAdPage || !user) return;
+  const loadAdsterraScript = () => {
+    return new Promise<void>((resolve, reject) => {
+      if (window.popunder) {
+        resolve();
+        return;
+      }
 
-    const loadAdsterraAd = () => {
-      setAdLoading(true);
-      setAdError(false);
-      setCanCloseAd(false);
-
-      try {
-        // Create script element for Adsterra
-        const script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = '//pl26224475.effectiveratecpm.com/95/9b/be/959bbed0b4d44c279370c930a2fdefc9.js';
-        script.async = true;
-        
-        script.onload = () => {
-          // Ad loaded successfully
-          setAdLoading(false);
-          
-          // Allow closing after 30 seconds (minimum ad watch time)
-          setTimeout(() => {
-            setCanCloseAd(true);
-          }, 30000);
-        };
-
-        script.onerror = () => {
-          setAdError(true);
-          setAdLoading(false);
-        };
-
-        if (adContainerRef.current) {
-          adContainerRef.current.innerHTML = '';
-          adContainerRef.current.appendChild(script);
-        }
-
-        return () => {
-          // Cleanup
-          if (adContainerRef.current) {
-            adContainerRef.current.innerHTML = '';
+      const script = document.createElement('script');
+      script.src = '//pl26224475.effectiveratecpm.com/95/9b/be/959bbed0b4d44c279370c930a2fdefc9.js';
+      script.async = true;
+      
+      script.onload = () => {
+        // Small delay to ensure the script is fully loaded
+        setTimeout(() => {
+          if (window.popunder) {
+            resolve();
+          } else {
+            reject(new Error('Adsterra script loaded but popunder not available'));
           }
-        };
-      } catch (error) {
-        console.error('Error loading Adsterra ad:', error);
-        setAdError(true);
-        setAdLoading(false);
-      }
-    };
+        }, 500);
+      };
 
-    // Small delay to ensure container is ready
-    const timer = setTimeout(loadAdsterraAd, 300);
+      script.onerror = () => {
+        reject(new Error('Failed to load Adsterra script'));
+      };
 
-    return () => {
-      clearTimeout(timer);
-      if (adContainerRef.current) {
-        adContainerRef.current.innerHTML = '';
-      }
-    };
-  }, [showAdPage, user]);
-
-  const startMining = () => {
-    if (timeRemaining !== null) return;
-    setShowAdPage(true);
+      document.body.appendChild(script);
+    });
   };
 
-  const handleAdComplete = () => {
-    setShowAdPage(false);
+  const showAd = async () => {
+    setIsLoading(true);
+    try {
+      await loadAdsterraScript();
+      
+      // Trigger the popunder ad
+      window.popunder = window.popunder || [];
+      window.popunder.push({
+        url: 'https://www.adsterra.com', // Adsterra URL or your tracking URL
+        where: 'background' // 'background' for popunder, 'front' for popup
+      });
+
+      // Simulate ad watching time (minimum 5 seconds)
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      return true;
+    } catch (error) {
+      console.error('Error showing ad:', error);
+      toast.error('Failed to load advertisement');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startMining = async () => {
+    if (timeRemaining !== null || !user) return;
+
+    const adSuccess = await showAd();
+    if (!adSuccess) return;
+
     setAdWatched(prev => prev + 1);
 
     if (adWatched + 1 >= 2) {
-      handleMiningComplete();
+      await handleMiningComplete();
     } else {
       toast.info('Ad completed!', {
         description: 'Watch one more ad to complete mining'
@@ -679,8 +1022,6 @@ const MiningCard = () => {
   };
 
   const handleMiningComplete = async () => {
-    if (!user) return;
-
     setIsMining(true);
     try {
       const randomCoins = Math.floor(Math.random() * 11) + 5; // 5-15 coins
@@ -747,62 +1088,6 @@ const MiningCard = () => {
     );
   }
 
-  if (showAdPage) {
-    return (
-      <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-4xl bg-white rounded-lg overflow-hidden flex flex-col">
-          {/* Close button (only visible when ad is complete) */}
-          {canCloseAd && (
-            <div className="flex justify-end p-2 bg-gray-100">
-              <button
-                onClick={handleAdComplete}
-                className="text-gray-700 hover:text-gray-900 transition"
-                aria-label="Close ad"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-          )}
-          
-          {/* Ad container */}
-          <div 
-            ref={adContainerRef}
-            className="flex-1 flex items-center justify-center bg-gray-50 min-h-[250px] w-full"
-          >
-            {adLoading && !adError && (
-              <div className="text-center p-4">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-600" />
-                <p className="mt-2 text-gray-600">Loading advertisement...</p>
-              </div>
-            )}
-            
-            {adError && (
-              <div className="text-center p-4">
-                <p className="text-red-600">Failed to load advertisement</p>
-                <Button 
-                  onClick={() => setShowAdPage(false)}
-                  className="mt-4"
-                  variant="destructive"
-                >
-                  Go Back
-                </Button>
-              </div>
-            )}
-          </div>
-          
-          {/* Ad status message */}
-          <div className="p-3 bg-gray-100 text-center border-t">
-            <p className="text-sm text-gray-600">
-              {canCloseAd 
-                ? "Advertisement completed - you may now close"
-                : "Please watch the advertisement to completion (30 seconds)"}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="glass-card rounded-3xl p-8 shadow-lg">
@@ -838,10 +1123,12 @@ const MiningCard = () => {
 
           <Button
             className="w-full rounded-xl py-6 text-lg font-medium"
-            disabled={timeRemaining !== null || isMining}
+            disabled={timeRemaining !== null || isLoading || isMining}
             onClick={startMining}
           >
-            {isMining ? (
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : isMining ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : timeRemaining !== null ? (
               <>
