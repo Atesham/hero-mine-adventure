@@ -600,203 +600,68 @@ const MiningCard = () => {
     };
   }, [timeRemaining]);
 
- // Load AdSense ad with flexible container
-//  useEffect(() => {
-//   if (!showAdPage || !user) return;
-
-useEffect(()=>{
+  // Load Adsterra popunder ad when showAdPage is true
+  useEffect(() => {
     if (!showAdPage || !user) return;
-    
-  
 
-//   const loadAd = () => {
-//     setAdLoading(true);
-//     setAdError(false);
-//     setCanCloseAd(false);
+    const loadAdsterraAd = () => {
+      setAdLoading(true);
+      setAdError(false);
+      setCanCloseAd(false);
 
-//     // Ensure container has dimensions
-//     if (adContainerRef.current) {
-//       adContainerRef.current.style.minHeight = '250px';
-//       adContainerRef.current.style.width = '100%';
-//       adContainerRef.current.style.maxWidth = '100vw';
-//     }
-
-//     try {
-//       // Clear previous ad if exists
-//       if (adContainerRef.current) {
-//         adContainerRef.current.innerHTML = '';
-//       }
-
-//       // Create flexible ad element
-//       const adElement = document.createElement('ins');
-//       adElement.className = 'adsbygoogle';
-//       adElement.style.display = 'block';
-      
-//       // Use fluid ad size for maximum flexibility
-//       adElement.dataset.adClient = 'ca-pub-5478626290073215';
-//       adElement.dataset.adSlot = '7643212953';
-//       adElement.dataset.adFormat = 'fluid';
-//       adElement.dataset.adLayoutKey = '-gw-3+1f-3k+5z';
-//       adElement.dataset.fullWidthResponsive = 'true';
-// // For rectangle ads:
-// adElement.dataset.adFormat = 'rectangle';
-// adElement.style.width = '300px';
-// adElement.style.height = '250px';
-
-// // For vertical banners:
-// adElement.dataset.adFormat = 'vertical';
-// adElement.style.width = '120px';
-// adElement.style.height = '600px';
-//       if (adContainerRef.current) {
-//         adContainerRef.current.appendChild(adElement);
-//       }
-
-//       // Push ad with error handling
-//       const pushAd = () => {
-//         try {
-//           (window.adsbygoogle = window.adsbygoogle || []).push({});
-//         } catch (e) {
-//           console.error('Ad push error:', e);
-//           setAdError(true);
-//           setAdLoading(false);
-//         }
-//       };
-
-//       // Small delay to ensure container is rendered
-//       setTimeout(pushAd, 100);
-
-//       // Allow closing after 30 seconds
-//       const closeTimer = setTimeout(() => {
-//         setCanCloseAd(true);
-//         setAdLoading(false);
-//       }, 30000);
-
-//       return () => clearTimeout(closeTimer);
-
-//     } catch (error) {
-//       console.error('Error loading ad:', error);
-//       setAdError(true);
-//       setAdLoading(false);
-//     }
-//   };
-
-//   const timer = setTimeout(loadAd, 300); // Slight delay to ensure container is ready
-
-//   return () => {
-//     clearTimeout(timer);
-//     if (adContainerRef.current) {
-//       adContainerRef.current.innerHTML = '';
-//     }
-//   };
-// }, [showAdPage, user]);
-
-
-const loadAd = () => {
-  setAdLoading(true);
-  setAdError(false);
-  setCanCloseAd(false);
-
-  // Ensure container exists and has dimensions
-  if (!adContainerRef.current) {
-    setAdError(true);
-    setAdLoading(false);
-    return;
-  }
-
-  // Set container styles
-  adContainerRef.current.style.minHeight = '250px';
-  adContainerRef.current.style.width = '100%';
-  adContainerRef.current.style.maxWidth = '100vw';
-  adContainerRef.current.innerHTML = '';
-
-  try {
-    // Create ad element - Choose ONE format (recommended: auto/fluid)
-    const adElement = document.createElement('ins');
-    adElement.className = 'adsbygoogle';
-    adElement.style.display = 'block';
-    
-    // ===== RECOMMENDED CONFIG =====
-    // For responsive ads (best for React apps)
-    adElement.dataset.adClient = 'ca-pub-5478626290073215'; // Your real publisher ID
-    adElement.dataset.adSlot = '7643212953'; // Your real slot ID
-    adElement.dataset.adFormat = 'auto';
-    adElement.dataset.fullWidthResponsive = 'true';
-
-    // ===== ALTERNATIVE FORMATS =====
-    // For fixed size ads (uncomment only one)
-    // adElement.dataset.adFormat = 'rectangle';
-    // adElement.style.width = '300px';
-    // adElement.style.height = '250px';
-    
-    // OR for vertical banners:
-    // adElement.dataset.adFormat = 'vertical';
-    // adElement.style.width = '120px';
-    // adElement.style.height = '600px';
-
-    adContainerRef.current.appendChild(adElement);
-
-    // Push ad with better error handling
-    const pushAd = () => {
       try {
-        if (!window.adsbygoogle) {
-          throw new Error('AdSense script not loaded');
+        // Create script element for Adsterra
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = '//pl26224475.effectiveratecpm.com/95/9b/be/959bbed0b4d44c279370c930a2fdefc9.js';
+        script.async = true;
+        
+        script.onload = () => {
+          // Ad loaded successfully
+          setAdLoading(false);
+          
+          // Allow closing after 30 seconds (minimum ad watch time)
+          setTimeout(() => {
+            setCanCloseAd(true);
+          }, 30000);
+        };
+
+        script.onerror = () => {
+          setAdError(true);
+          setAdLoading(false);
+        };
+
+        if (adContainerRef.current) {
+          adContainerRef.current.innerHTML = '';
+          adContainerRef.current.appendChild(script);
         }
-        
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-        
-        // Verify ad loaded
-        setTimeout(() => {
-          const adStatus = adElement.getAttribute('data-adsbygoogle-status');
-          if (adStatus !== 'done' && !canCloseAd) {
-            setAdError(true);
-            setAdLoading(false);
+
+        return () => {
+          // Cleanup
+          if (adContainerRef.current) {
+            adContainerRef.current.innerHTML = '';
           }
-        }, 2000);
-      } catch (e) {
-        console.error('Ad push error:', e);
+        };
+      } catch (error) {
+        console.error('Error loading Adsterra ad:', error);
         setAdError(true);
         setAdLoading(false);
       }
     };
 
-    // Delay to ensure container stability
-    const adLoadTimeout = setTimeout(pushAd, 150);
-
-    // Allow closing after 30 seconds (minimum ad duration)
-    const closeTimer = setTimeout(() => {
-      setCanCloseAd(true);
-      setAdLoading(false);
-    }, 30000);
+    // Small delay to ensure container is ready
+    const timer = setTimeout(loadAdsterraAd, 300);
 
     return () => {
-      clearTimeout(adLoadTimeout);
-      clearTimeout(closeTimer);
+      clearTimeout(timer);
+      if (adContainerRef.current) {
+        adContainerRef.current.innerHTML = '';
+      }
     };
-
-  } catch (error) {
-    console.error('Ad creation error:', error);
-    setAdError(true);
-    setAdLoading(false);
-  }
-};
-
-// Load ad with cleanup
-const timer = setTimeout(() => {
-  if (showAdPage && user) {
-    loadAd();
-  }
-}, 300);
-
-return () => {
-  clearTimeout(timer);
-  if (adContainerRef.current) {
-    adContainerRef.current.innerHTML = '';
-  }
-};
-}, [showAdPage, user]);
+  }, [showAdPage, user]);
 
   const startMining = () => {
-    if (adWatched >= 2) return;
+    if (timeRemaining !== null) return;
     setShowAdPage(true);
   };
 
@@ -816,6 +681,7 @@ return () => {
   const handleMiningComplete = async () => {
     if (!user) return;
 
+    setIsMining(true);
     try {
       const randomCoins = Math.floor(Math.random() * 11) + 5; // 5-15 coins
 
@@ -844,6 +710,8 @@ return () => {
     } catch (error) {
       console.error('Error updating mining rewards:', error);
       toast.error('Failed to update mining rewards');
+    } finally {
+      setIsMining(false);
     }
   };
 
@@ -896,14 +764,10 @@ return () => {
             </div>
           )}
           
-          {/* Flexible ad container */}
+          {/* Ad container */}
           <div 
             ref={adContainerRef}
-            className="flex-1 flex items-center justify-center bg-gray-50"
-            style={{
-              minHeight: '250px',
-              width: '100%',
-            }}
+            className="flex-1 flex items-center justify-center bg-gray-50 min-h-[250px] w-full"
           >
             {adLoading && !adError && (
               <div className="text-center p-4">
@@ -931,7 +795,7 @@ return () => {
             <p className="text-sm text-gray-600">
               {canCloseAd 
                 ? "Advertisement completed - you may now close"
-                : "Please watch the advertisement to completion"}
+                : "Please watch the advertisement to completion (30 seconds)"}
             </p>
           </div>
         </div>
@@ -948,7 +812,7 @@ return () => {
           </div>
           <h2 className="text-2xl font-bold">Hero Coin Mining</h2>
           <p className="text-muted-foreground mt-2">
-            Watch ads to earn Hero Coins
+            Watch ads to earn Hero Coins (2 ads per session)
           </p>
         </div>
 
@@ -974,10 +838,12 @@ return () => {
 
           <Button
             className="w-full rounded-xl py-6 text-lg font-medium"
-            disabled={timeRemaining !== null || adWatched >= 2}
+            disabled={timeRemaining !== null || isMining}
             onClick={startMining}
           >
-            {timeRemaining !== null ? (
+            {isMining ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : timeRemaining !== null ? (
               <>
                 <Clock className="mr-2 h-5 w-5" />
                 Cooling Down
