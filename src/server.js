@@ -185,13 +185,24 @@ admin.initializeApp({
 
 const db = admin.firestore();
 const app = express();
-app.use(cors({
-origin:  hero-mine-adventure.vercel.app,
 
-  origin: 'http://localhost:8080', // Replace with your frontend URL
-  credentials: true,
+const allowedOrigins = [
+  'http://localhost:8080',
+  'https://hero-mine-adventure.vercel.app'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
 }));
-app.use(bodyParser.json());
+
+app.options('*', cors()); // Preflight
 
 // Nodemailer configuration
 const transporter = nodemailer.createTransport({
