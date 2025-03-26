@@ -125,29 +125,30 @@ const MiningCard = () => {
 
 
   const startMining = () => {
-  if (!user || isMining || timeRemaining) return;
+    if (!user || isMining || timeRemaining) return;
   
-  toast.info('Loading ad...', {
-    description: 'Please wait while we load the ad'
-  });
-
-  setShowAd(true);
-  setAdLoaded(false);
-  setAdError(false);
+    // Reset ad state
+    setShowAd(false);
+    setAdLoaded(false);
+    setAdError(false);
+    
+    // Small delay to ensure DOM updates
+    setTimeout(() => {
+      setShowAd(true);
+      toast.info('Loading ad...');
+      
+      // Fallback if ad doesn't load
+      const fallbackTimer = setTimeout(() => {
+        if (!adLoaded && !adError) {
+          setAdError(true);
+          toast.warning('Ad failed to load');
+        }
+      }, 8000);
   
-  // Fallback if ad doesn't load
-  const fallbackTimer = setTimeout(() => {
-    if (!adLoaded && !adError) {
-      setAdError(true);
-      toast.warning('Ad failed to load', {
-        description: 'Please try again later'
-      });
-      setShowAd(false);
-    }
-  }, 8000); // 8 second timeout
+      return () => clearTimeout(fallbackTimer);
+    }, 100);
+  };
 
-  return () => clearTimeout(fallbackTimer);
-};
   
   const handleMiningComplete = async () => {
     if (!user) return;
@@ -218,7 +219,16 @@ const [adLoaded, setAdLoaded] = useState(false);
 
 // This effect handles the ad loading
 useEffect(() => {
-  if (!showAd) return;
+  if (!showAd || !adLoaded) return;
+
+  const adElement = adContainerRef.current?.querySelector('.adsbygoogle');
+  if (adElement && !adElement.getAttribute('data-adsbygoogle-status')) {
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (err) {
+      console.error('AdSense push error 1:', err);
+      setAdError(true);
+    }}
 
   const loadAd = () => {
     try {
@@ -259,42 +269,40 @@ return (
       </div>
 
       {showAd && (
-        <div ref={adContainerRef} className="my-4 min-h-[250px] flex items-center justify-center">
-          {adError ? (
-            <div className="text-center p-4 bg-red-50 rounded-lg">
-              <p className="text-red-600">Ad failed to load</p>
-              <Button 
-                variant="outline" 
-                className="mt-2"
-                onClick={() => {
-                  setAdError(false);
-                  startMining();
-                }}
-              >
-                Try Again
-              </Button>
-            </div>
-          ) : !adLoaded ? (
-            <div className="text-center">
-              <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-              <p>Loading ad...</p>
-            </div>
-          ) : (
-            <>
-              {/* AdSense Ad Unit - JSX version */}
-              <ins
-                className="adsbygoogle"
-                style={{ display: 'block' }}
-                data-ad-client="ca-pub-5478626290073215"
-                data-ad-slot="7643212953"
-                data-ad-format="auto"
-                data-full-width-responsive="true"
-              />
-            </>
-          )}
-        </div>
-      )}
-
+  <div ref={adContainerRef} className="my-4 min-h-[250px] flex items-center justify-center">
+    {adError ? (
+      <div className="text-center p-4 bg-red-50 rounded-lg">
+        <p className="text-red-600">Ad failed to load</p>
+        <Button 
+          variant="outline" 
+          className="mt-2"
+          onClick={() => {
+            setShowAd(false);
+            setTimeout(startMining, 100);
+          }}
+        >
+          Try Again
+        </Button>
+      </div>
+    ) : !adLoaded ? (
+      <div className="text-center">
+        <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+        <p>Loading ad...</p>
+      </div>
+    ) : (
+      <div key={Date.now()}> {/* Force new mount each time */}
+        <ins
+          className="adsbygoogle"
+          style={{ display: 'block' }}
+          data-ad-client="ca-pub-5478626290073215"
+          data-ad-slot="7643212953"
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        />
+      </div>
+    )}
+  </div>
+)}
       
         <div className="space-y-6">
           {/* Mining progress */}
