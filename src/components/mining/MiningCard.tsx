@@ -517,36 +517,54 @@
 
 
 
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+
+import React, { useState, useEffect, useRef,useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { PlayCircle, Clock, Loader2, Coins, LogIn } from 'lucide-react';
+import { PlayCircle, Clock, Loader2, Coins, LogIn, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, increment, collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-// Types
-type ContainerSize = { width: number; height: number };
+// Ad configuration (from your original code)
+const AD_CONFIG = {
+  adClient: 'ca-pub-5478626290073215',
+  adSlot: '7643212953',
+  adFormat: 'auto',
+  adStyle: {
+    display: 'block',
+    width: '100%',
+    minWidth: '300px',
+    height: '250px'
+  }
+};
 
 const MiningCard = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   
-  // State
+  // Mining state
   const [isMining, setIsMining] = useState(false);
   const [progress, setProgress] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [adWatched, setAdWatched] = useState(0);
+  
+  // Ad state
   const [showAdPage, setShowAdPage] = useState(false);
+  const [adError, setAdError] = useState(false);
+  const [adLoaded, setAdLoaded] = useState(false);
+  const [adAttempts, setAdAttempts] = useState(0);
   
   // Refs
   const mountedRef = useRef(true);
   const progressIntervalRef = useRef<NodeJS.Timeout>();
   const cooldownIntervalRef = useRef<NodeJS.Timeout>();
+  const adContainerRef = useRef<HTMLDivElement>(null);
+  const adTimeoutRef = useRef<NodeJS.Timeout>();
+  const currentAdRef = useRef<HTMLElement | null>(null);
 
-  // ========== Core Functions ========== //
+  // ========== Core Mining Functions ========== //
 
   const checkCooldown = async () => {
     if (!user) return;
@@ -613,6 +631,73 @@ const MiningCard = () => {
     }
   };
 
+  // ========== Ad Functions ========== //
+
+  const cleanupAd = useCallback(() => {
+      if (adTimeoutRef.current) clearTimeout(adTimeoutRef.current);
+      if (currentAdRef.current && adContainerRef.current?.contains(currentAdRef.current)) {
+        adContainerRef.current.removeChild(currentAdRef.current);
+      }
+      currentAdRef.current = null;
+    }, []);
+    const loadAd = useCallback(() => {
+      try {
+        const adsbygoogle = (window as any).adsbygoogle || [];
+        if (!adsbygoogle.push) throw new Error('AdSense script not loaded');
+        if (!adContainerRef.current) throw new Error('Ad container not ready');
+    
+        cleanupAd();
+    
+        const adElement = document.createElement('ins');
+        adElement.className = 'adsbygoogle';
+        adElement.style.display = 'block';
+        adElement.dataset.adClient = 'ca-pub-5478626290073215';
+        adElement.dataset.adSlot = '7643212953';
+        adElement.dataset.adFormat = 'auto';
+        adElement.dataset.fullWidthResponsive = 'true';
+    
+        adContainerRef.current.appendChild(adElement);
+        currentAdRef.current = adElement;
+    
+        adsbygoogle.push({});
+  
+        adTimeoutRef.current = setTimeout(() => {
+          const status = adElement.getAttribute('data-adsbygoogle-status');
+          if (status === 'done') {
+            setAdLoaded(true);
+            setAdError(false);
+          } else {
+            setAdError(true);
+            setAdAttempts(prev => prev + 1);
+            cleanupAd();
+          }
+        }, 3000);
+  
+      } catch (err) {
+        setAdError(true);
+        setAdAttempts(prev => prev + 1);
+        cleanupAd();
+      }
+    }, [cleanupAd]);
+  
+
+  const startMining = () => {
+    setIsMining(true);
+    setShowAdPage(true);
+    setAdLoaded(false);
+    setAdError(false);
+    setAdAttempts(0);
+    startProgressTimer();
+  };
+
+  const handleAdCancel = () => {
+    cleanupAd();
+    setIsMining(false);
+    setShowAdPage(false);
+    setProgress(0);
+    clearInterval(progressIntervalRef.current);
+  };
+
   // ========== Timer Functions ========== //
 
   const startProgressTimer = () => {
@@ -660,21 +745,6 @@ const MiningCard = () => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secondsRemaining.toString().padStart(2, '0')}`;
   };
 
-  // ========== Ad Functions ========== //
-
-  const startMining = () => {
-    setIsMining(true);
-    setShowAdPage(true);
-    startProgressTimer();
-  };
-
-  const handleAdCancel = () => {
-    setIsMining(false);
-    setShowAdPage(false);
-    clearInterval(progressIntervalRef.current);
-    setProgress(0);
-  };
-
   // ========== Effects ========== //
 
   useEffect(() => {
@@ -683,6 +753,7 @@ const MiningCard = () => {
     
     return () => {
       mountedRef.current = false;
+      cleanupAd();
       clearInterval(progressIntervalRef.current);
       clearInterval(cooldownIntervalRef.current);
     };
@@ -704,6 +775,22 @@ const MiningCard = () => {
     }
     return () => clearInterval(cooldownIntervalRef.current);
   }, [timeRemaining]);
+
+  useEffect(() => {
+    if (showAdPage && adContainerRef.current) {
+      // Small delay to ensure container is ready
+      const timer = setTimeout(() => {
+        if (adAttempts < 3) {
+          loadAd();
+        }
+      }, 100);
+
+      return () => {
+        clearTimeout(timer);
+        cleanupAd();
+      };
+    }
+  }, [showAdPage, adAttempts]);
 
   // ========== Render Functions ========== //
 
@@ -729,18 +816,50 @@ const MiningCard = () => {
 
   const renderAdPage = () => (
     <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
+        <button 
+          onClick={handleAdCancel}
+          className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100"
+        >
+          <X className="w-5 h-5" />
+        </button>
+        
         <h2 className="text-xl font-bold mb-4">Watch Ad to Mine</h2>
-        <div className="min-h-[300px] bg-gray-100 rounded flex items-center justify-center mb-4">
-          {/* Ad content would be rendered here */}
-          <p>Advertisement Content</p>
+        
+        <div 
+          ref={adContainerRef}
+          className="min-h-[250px] bg-gray-100 rounded flex items-center justify-center mb-4"
+          style={{ minWidth: '300px' }}
+        >
+          {adError ? (
+            <div className="text-center p-4">
+              <p className="text-red-600">
+                {adAttempts >= 3 ? 'Ad loading failed' : 'Error loading ad'}
+              </p>
+              {adAttempts < 3 && (
+                <Button
+                  onClick={() => setAdAttempts(prev => prev + 1)}
+                  className="mt-2"
+                >
+                  Try Again
+                </Button>
+              )}
+            </div>
+          ) : !adLoaded ? (
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto" />
+              <p className="mt-2">Loading advertisement</p>
+            </div>
+          ) : null}
         </div>
-        <div className="flex justify-between">
-          <Button variant="outline" onClick={handleAdCancel}>
-            Cancel
-          </Button>
+        
+        <div className="flex justify-between items-center">
+          <div className="w-full mr-4">
+            <Progress value={progress} className="h-2" />
+            <p className="text-sm text-center mt-1">{progress}% complete</p>
+          </div>
           <Button disabled={progress < 100}>
-            {progress < 100 ? `${progress}% Complete` : 'Finish Mining'}
+            {progress < 100 ? 'Mining...' : 'Complete'}
           </Button>
         </div>
       </div>
