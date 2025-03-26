@@ -601,89 +601,193 @@ const MiningCard = () => {
   }, [timeRemaining]);
 
  // Load AdSense ad with flexible container
- useEffect(() => {
-  if (!showAdPage || !user) return;
+//  useEffect(() => {
+//   if (!showAdPage || !user) return;
 
-  const loadAd = () => {
-    setAdLoading(true);
-    setAdError(false);
-    setCanCloseAd(false);
+//   const loadAd = () => {
+//     setAdLoading(true);
+//     setAdError(false);
+//     setCanCloseAd(false);
 
-    // Ensure container has dimensions
-    if (adContainerRef.current) {
-      adContainerRef.current.style.minHeight = '250px';
-      adContainerRef.current.style.width = '100%';
-      adContainerRef.current.style.maxWidth = '100vw';
-    }
+//     // Ensure container has dimensions
+//     if (adContainerRef.current) {
+//       adContainerRef.current.style.minHeight = '250px';
+//       adContainerRef.current.style.width = '100%';
+//       adContainerRef.current.style.maxWidth = '100vw';
+//     }
 
-    try {
-      // Clear previous ad if exists
-      if (adContainerRef.current) {
-        adContainerRef.current.innerHTML = '';
-      }
+//     try {
+//       // Clear previous ad if exists
+//       if (adContainerRef.current) {
+//         adContainerRef.current.innerHTML = '';
+//       }
 
-      // Create flexible ad element
-      const adElement = document.createElement('ins');
-      adElement.className = 'adsbygoogle';
-      adElement.style.display = 'block';
+//       // Create flexible ad element
+//       const adElement = document.createElement('ins');
+//       adElement.className = 'adsbygoogle';
+//       adElement.style.display = 'block';
       
-      // Use fluid ad size for maximum flexibility
-      adElement.dataset.adClient = 'ca-pub-5478626290073215';
-      adElement.dataset.adSlot = '7643212953';
-      adElement.dataset.adFormat = 'fluid';
-      adElement.dataset.adLayoutKey = '-gw-3+1f-3k+5z';
-      adElement.dataset.fullWidthResponsive = 'true';
-// For rectangle ads:
-adElement.dataset.adFormat = 'rectangle';
-adElement.style.width = '300px';
-adElement.style.height = '250px';
+//       // Use fluid ad size for maximum flexibility
+//       adElement.dataset.adClient = 'ca-pub-5478626290073215';
+//       adElement.dataset.adSlot = '7643212953';
+//       adElement.dataset.adFormat = 'fluid';
+//       adElement.dataset.adLayoutKey = '-gw-3+1f-3k+5z';
+//       adElement.dataset.fullWidthResponsive = 'true';
+// // For rectangle ads:
+// adElement.dataset.adFormat = 'rectangle';
+// adElement.style.width = '300px';
+// adElement.style.height = '250px';
 
-// For vertical banners:
-adElement.dataset.adFormat = 'vertical';
-adElement.style.width = '120px';
-adElement.style.height = '600px';
-      if (adContainerRef.current) {
-        adContainerRef.current.appendChild(adElement);
-      }
+// // For vertical banners:
+// adElement.dataset.adFormat = 'vertical';
+// adElement.style.width = '120px';
+// adElement.style.height = '600px';
+//       if (adContainerRef.current) {
+//         adContainerRef.current.appendChild(adElement);
+//       }
 
-      // Push ad with error handling
-      const pushAd = () => {
-        try {
-          (window.adsbygoogle = window.adsbygoogle || []).push({});
-        } catch (e) {
-          console.error('Ad push error:', e);
-          setAdError(true);
-          setAdLoading(false);
+//       // Push ad with error handling
+//       const pushAd = () => {
+//         try {
+//           (window.adsbygoogle = window.adsbygoogle || []).push({});
+//         } catch (e) {
+//           console.error('Ad push error:', e);
+//           setAdError(true);
+//           setAdLoading(false);
+//         }
+//       };
+
+//       // Small delay to ensure container is rendered
+//       setTimeout(pushAd, 100);
+
+//       // Allow closing after 30 seconds
+//       const closeTimer = setTimeout(() => {
+//         setCanCloseAd(true);
+//         setAdLoading(false);
+//       }, 30000);
+
+//       return () => clearTimeout(closeTimer);
+
+//     } catch (error) {
+//       console.error('Error loading ad:', error);
+//       setAdError(true);
+//       setAdLoading(false);
+//     }
+//   };
+
+//   const timer = setTimeout(loadAd, 300); // Slight delay to ensure container is ready
+
+//   return () => {
+//     clearTimeout(timer);
+//     if (adContainerRef.current) {
+//       adContainerRef.current.innerHTML = '';
+//     }
+//   };
+// }, [showAdPage, user]);
+
+
+const loadAd = () => {
+  setAdLoading(true);
+  setAdError(false);
+  setCanCloseAd(false);
+
+  // Ensure container exists and has dimensions
+  if (!adContainerRef.current) {
+    setAdError(true);
+    setAdLoading(false);
+    return;
+  }
+
+  // Set container styles
+  adContainerRef.current.style.minHeight = '250px';
+  adContainerRef.current.style.width = '100%';
+  adContainerRef.current.style.maxWidth = '100vw';
+  adContainerRef.current.innerHTML = '';
+
+  try {
+    // Create ad element - Choose ONE format (recommended: auto/fluid)
+    const adElement = document.createElement('ins');
+    adElement.className = 'adsbygoogle';
+    adElement.style.display = 'block';
+    
+    // ===== RECOMMENDED CONFIG =====
+    // For responsive ads (best for React apps)
+    adElement.dataset.adClient = 'ca-pub-5478626290073215'; // Your real publisher ID
+    adElement.dataset.adSlot = '7643212953'; // Your real slot ID
+    adElement.dataset.adFormat = 'auto';
+    adElement.dataset.fullWidthResponsive = 'true';
+
+    // ===== ALTERNATIVE FORMATS =====
+    // For fixed size ads (uncomment only one)
+    // adElement.dataset.adFormat = 'rectangle';
+    // adElement.style.width = '300px';
+    // adElement.style.height = '250px';
+    
+    // OR for vertical banners:
+    // adElement.dataset.adFormat = 'vertical';
+    // adElement.style.width = '120px';
+    // adElement.style.height = '600px';
+
+    adContainerRef.current.appendChild(adElement);
+
+    // Push ad with better error handling
+    const pushAd = () => {
+      try {
+        if (!window.adsbygoogle) {
+          throw new Error('AdSense script not loaded');
         }
-      };
-
-      // Small delay to ensure container is rendered
-      setTimeout(pushAd, 100);
-
-      // Allow closing after 30 seconds
-      const closeTimer = setTimeout(() => {
-        setCanCloseAd(true);
+        
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+        
+        // Verify ad loaded
+        setTimeout(() => {
+          const adStatus = adElement.getAttribute('data-adsbygoogle-status');
+          if (adStatus !== 'done' && !canCloseAd) {
+            setAdError(true);
+            setAdLoading(false);
+          }
+        }, 2000);
+      } catch (e) {
+        console.error('Ad push error:', e);
+        setAdError(true);
         setAdLoading(false);
-      }, 30000);
+      }
+    };
 
-      return () => clearTimeout(closeTimer);
+    // Delay to ensure container stability
+    const adLoadTimeout = setTimeout(pushAd, 150);
 
-    } catch (error) {
-      console.error('Error loading ad:', error);
-      setAdError(true);
+    // Allow closing after 30 seconds (minimum ad duration)
+    const closeTimer = setTimeout(() => {
+      setCanCloseAd(true);
       setAdLoading(false);
-    }
-  };
+    }, 30000);
 
-  const timer = setTimeout(loadAd, 300); // Slight delay to ensure container is ready
+    return () => {
+      clearTimeout(adLoadTimeout);
+      clearTimeout(closeTimer);
+    };
 
-  return () => {
-    clearTimeout(timer);
-    if (adContainerRef.current) {
-      adContainerRef.current.innerHTML = '';
-    }
-  };
-}, [showAdPage, user]);
+  } catch (error) {
+    console.error('Ad creation error:', error);
+    setAdError(true);
+    setAdLoading(false);
+  }
+};
+
+// Load ad with cleanup
+const timer = setTimeout(() => {
+  if (showAdPage && user) {
+    loadAd();
+  }
+}, 300);
+
+return () => {
+  clearTimeout(timer);
+  if (adContainerRef.current) {
+    adContainerRef.current.innerHTML = '';
+  }
+};
 
   const startMining = () => {
     if (adWatched >= 2) return;
