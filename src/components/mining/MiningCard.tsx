@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef} from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { PlayCircle, Clock, Loader2, Coins, LogIn } from 'lucide-react';
@@ -8,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, increment, collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useAdSense } from '@/hooks/useAds';
 
 const MiningCard = () => {
   const [isMining, setIsMining] = useState(false);
@@ -15,7 +15,11 @@ const MiningCard = () => {
   const [timeRemaining, setTimeRemaining] = useState<null | number>(null);
   const [adWatched, setAdWatched] = useState(0);
   const { user } = useAuth();
-  
+  const [showAd, setShowAd] = useState(false);
+  const adContainerRef = useRef<HTMLDivElement>(null);
+
+  useAdSense(showAd);  
+
   useEffect(() => {
     if (!user) return;
     
@@ -118,19 +122,24 @@ const MiningCard = () => {
     
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
-  
   const startMining = () => {
     if (!user || isMining || timeRemaining) return;
     
-    toast.info('Starting mining process', {
-      description: 'Watch the ad to earn Hero Coins'
-    });
-    
+    setShowAd(true);
     setIsMining(true);
     
-    // In a real app, you would trigger the ad network SDK here
-    // For example: AdMob.showRewardedAd();
+    // Fallback in case ad doesn't load
+    const fallbackTimer = setTimeout(() => {
+      if (progress === 0) {
+        toast.warning('Ad not loaded, please try again');
+        setIsMining(false);
+        setShowAd(false);
+      }
+    }, 10000); // 10 seconds timeout
+    
+    return () => clearTimeout(fallbackTimer);
   };
+
   
   const handleMiningComplete = async () => {
     if (!user) return;
@@ -207,7 +216,18 @@ const MiningCard = () => {
             Watch ads to earn Hero Coins
           </p>
         </div>
-        
+        {showAd && (
+        <div ref={adContainerRef} className="my-4">
+          <ins 
+                      className="adsbygoogle"
+     style={{ display: 'block' }}
+     data-ad-client="ca-pub-5478626290073215"
+     data-ad-slot="7643212953"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+        </div>
+      )}
+      
         <div className="space-y-6">
           {/* Mining progress */}
           {isMining && (
