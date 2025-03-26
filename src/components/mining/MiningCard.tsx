@@ -865,6 +865,7 @@
 //   );
 // };
 
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { PlayCircle, Clock, Loader2, Coins, LogIn } from 'lucide-react';
@@ -874,11 +875,13 @@ import { Link } from 'react-router-dom';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, increment, collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-// Extend Window interface
+// Global declaration for Adsterra
 declare global {
   interface Window {
+    popunder?: {
+      push: (params: { url: string; where: string }) => void;
+    };
     popParams?: any;
-    popunder?: any;
   }
 }
 
@@ -887,8 +890,6 @@ const MiningCard = () => {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [adWatched, setAdWatched] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [adScriptLoaded, setAdScriptLoaded] = useState(false);
-  
   const { user } = useAuth();
 
   // Check cooldown on mount
@@ -950,39 +951,30 @@ const MiningCard = () => {
     };
   }, [timeRemaining]);
 
-  const loadAdsterraScript = () => {
+  const initializeAdsterra = async () => {
     return new Promise<void>((resolve, reject) => {
-      // If already loaded and popunder is available
+      // Check if already loaded
       if (window.popunder) {
         resolve();
         return;
       }
 
-      // If script is already in the DOM but popunder isn't available yet
-      if (adScriptLoaded) {
-        const checkInterval = setInterval(() => {
-          if (window.popunder) {
-            clearInterval(checkInterval);
-            resolve();
-          }
-        }, 100);
-
-        // Timeout after 3 seconds
-        setTimeout(() => {
-          clearInterval(checkInterval);
-          reject(new Error('Adsterra popunder not available after script load'));
-        }, 3000);
-        return;
-      }
-
-      // Load the script
+      // Create script element
       const script = document.createElement('script');
       script.src = '//pl26224475.effectiveratecpm.com/95/9b/be/959bbed0b4d44c279370c930a2fdefc9.js';
       script.async = true;
       
+      // Set up parameters before loading script
+      window.popParams = {
+        under: true,
+        rel: 'nofollow',
+        position: 'center',
+        width: 800,
+        height: 600
+      };
+
       script.onload = () => {
-        setAdScriptLoaded(true);
-        // Check for popunder availability with retries
+        // Sometimes the script loads but the object isn't immediately available
         const checkInterval = setInterval(() => {
           if (window.popunder) {
             clearInterval(checkInterval);
@@ -990,11 +982,11 @@ const MiningCard = () => {
           }
         }, 100);
 
-        // Timeout after 3 seconds
+        // Timeout after 5 seconds
         setTimeout(() => {
           clearInterval(checkInterval);
-          reject(new Error('Adsterra popunder not available after script load'));
-        }, 3000);
+          reject(new Error('Adsterra popunder not initialized'));
+        }, 5000);
       };
 
       script.onerror = () => {
@@ -1008,31 +1000,22 @@ const MiningCard = () => {
   const showAd = async () => {
     setIsLoading(true);
     try {
-      await loadAdsterraScript();
+      // Initialize Adsterra
+      await initializeAdsterra();
       
-      // Initialize popunder parameters
-      window.popParams = {
-        under: true, // Open as popunder
-        rel: 'nofollow',
-        position: 'center',
-        width: 800,
-        height: 600
-      };
-
-      // Trigger the popunder ad
-      window.popunder = window.popunder || [];
-      window.popunder.push({
-        url: 'https://www.adsterra.com', // Adsterra URL or your tracking URL
-        where: 'under' // 'under' for popunder
+      // Show the popunder ad
+      window.popunder?.push({
+        url: 'https://www.adsterra.com',
+        where: 'under'
       });
 
-      // Simulate minimum ad watching time (5 seconds)
+      // Minimum watch time
       await new Promise(resolve => setTimeout(resolve, 5000));
       
       return true;
     } catch (error) {
       console.error('Error showing ad:', error);
-      toast.error('Failed to load advertisement. Please try again.');
+      toast.error('Ad service is temporarily unavailable. Please try again later.');
       return false;
     } finally {
       setIsLoading(false);
