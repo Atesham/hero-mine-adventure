@@ -604,6 +604,11 @@ const MiningCard = () => {
 //  useEffect(() => {
 //   if (!showAdPage || !user) return;
 
+useEffect(()=>{
+    if (!showAdPage || !user) return;
+    
+  
+
 //   const loadAd = () => {
 //     setAdLoading(true);
 //     setAdError(false);
@@ -788,6 +793,7 @@ return () => {
     adContainerRef.current.innerHTML = '';
   }
 };
+}, [showAdPage, user]);
 
   const startMining = () => {
     if (adWatched >= 2) return;
