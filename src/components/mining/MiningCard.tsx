@@ -516,365 +516,11 @@
 // export default MiningCard;
 
 
-//---------------------------------------------------------------------------------------------------------------------------------------------------------------//
-
-
-//---------------------------------------------------------------------------------------------------------------------------------------------------------------//
-
-// import React, { useState, useEffect, useRef } from 'react';
-// import { Button } from '@/components/ui/button';
-// import { Progress } from '@/components/ui/progress';
-// import { PlayCircle, Clock, Loader2, Coins, LogIn, X } from 'lucide-react';
-// import { toast } from 'sonner';
-// import { useAuth } from '@/contexts/AuthContext';
-// import { Link, useNavigate } from 'react-router-dom';
-// import { doc, getDoc, setDoc, updateDoc, serverTimestamp, increment, collection, addDoc } from 'firebase/firestore';
-// import { db } from '@/lib/firebase';
-
-// const MiningCard = () => {
-//   const [isMining, setIsMining] = useState(false);
-//   const [progress, setProgress] = useState(0);
-//   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
-//   const [adWatched, setAdWatched] = useState(0);
-//   const [showAdPage, setShowAdPage] = useState(false);
-//   const [canCloseAd, setCanCloseAd] = useState(false);
-//   const [adError, setAdError] = useState(false);
-//   const [adLoading, setAdLoading] = useState(false);
-  
-//   const adContainerRef = useRef<HTMLDivElement>(null);
-//   const navigate = useNavigate();
-//   const { user } = useAuth();
-
-//   // Check cooldown on mount
-//   useEffect(() => {
-//     if (!user) return;
-
-//     const checkCooldown = async () => {
-//       try {
-//         const userRef = doc(db, 'users', user.uid);
-//         const userDoc = await getDoc(userRef);
-
-//         if (userDoc.exists()) {
-//           const userData = userDoc.data();
-//           const lastMiningTime = userData.lastMiningTime?.toDate();
-
-//           if (lastMiningTime) {
-//             const cooldownEnd = new Date(lastMiningTime.getTime() + (12 * 60 * 60 * 1000));
-//             const now = new Date();
-
-//             if (cooldownEnd > now) {
-//               setTimeRemaining(Math.ceil((cooldownEnd.getTime() - now.getTime()) / 1000));
-//             }
-//           }
-//         } else {
-//           await setDoc(userRef, {
-//             displayName: user.displayName || user.email?.split('@')[0],
-//             email: user.email,
-//             coins: 0,
-//             totalMined: 0,
-//             createdAt: serverTimestamp(),
-//           });
-//         }
-//       } catch (error) {
-//         console.error('Error checking cooldown:', error);
-//       }
-//     };
-
-//     checkCooldown();
-//   }, [user]);
-
-//   // Handle cooldown timer
-//   useEffect(() => {
-//     let interval: NodeJS.Timeout;
-
-//     if (timeRemaining && timeRemaining > 0) {
-//       interval = setInterval(() => {
-//         setTimeRemaining((prev) => {
-//           if (prev === null || prev <= 1) {
-//             clearInterval(interval);
-//             return null;
-//           }
-//           return prev - 1;
-//         });
-//       }, 1000);
-//     }
-
-//     return () => {
-//       if (interval) clearInterval(interval);
-//     };
-//   }, [timeRemaining]);
-
-//   // Load Adsterra popunder ad when showAdPage is true
-//   useEffect(() => {
-//     if (!showAdPage || !user) return;
-
-//     const loadAdsterraAd = () => {
-//       setAdLoading(true);
-//       setAdError(false);
-//       setCanCloseAd(false);
-
-//       try {
-//         // Create script element for Adsterra
-//         const script = document.createElement('script');
-//         script.type = 'text/javascript';
-//         script.src = '//pl26224475.effectiveratecpm.com/95/9b/be/959bbed0b4d44c279370c930a2fdefc9.js';
-//         script.async = true;
-        
-//         script.onload = () => {
-//           // Ad loaded successfully
-//           setAdLoading(false);
-          
-//           // Allow closing after 30 seconds (minimum ad watch time)
-//           setTimeout(() => {
-//             setCanCloseAd(true);
-//           }, 30000);
-//         };
-
-//         script.onerror = () => {
-//           setAdError(true);
-//           setAdLoading(false);
-//         };
-
-//         if (adContainerRef.current) {
-//           adContainerRef.current.innerHTML = '';
-//           adContainerRef.current.appendChild(script);
-//         }
-
-//         return () => {
-//           // Cleanup
-//           if (adContainerRef.current) {
-//             adContainerRef.current.innerHTML = '';
-//           }
-//         };
-//       } catch (error) {
-//         console.error('Error loading Adsterra ad:', error);
-//         setAdError(true);
-//         setAdLoading(false);
-//       }
-//     };
-
-//     // Small delay to ensure container is ready
-//     const timer = setTimeout(loadAdsterraAd, 300);
-
-//     return () => {
-//       clearTimeout(timer);
-//       if (adContainerRef.current) {
-//         adContainerRef.current.innerHTML = '';
-//       }
-//     };
-//   }, [showAdPage, user]);
-
-//   const startMining = () => {
-//     if (timeRemaining !== null) return;
-//     setShowAdPage(true);
-//   };
-
-//   const handleAdComplete = () => {
-//     setShowAdPage(false);
-//     setAdWatched(prev => prev + 1);
-
-//     if (adWatched + 1 >= 2) {
-//       handleMiningComplete();
-//     } else {
-//       toast.info('Ad completed!', {
-//         description: 'Watch one more ad to complete mining'
-//       });
-//     }
-//   };
-
-//   const handleMiningComplete = async () => {
-//     if (!user) return;
-
-//     setIsMining(true);
-//     try {
-//       const randomCoins = Math.floor(Math.random() * 11) + 5; // 5-15 coins
-
-//       const userRef = doc(db, 'users', user.uid);
-//       await updateDoc(userRef, {
-//         coins: increment(randomCoins),
-//         totalMined: increment(randomCoins),
-//         lastMiningTime: serverTimestamp()
-//       });
-
-//       await addDoc(collection(db, 'transactions'), {
-//         userId: user.uid,
-//         type: 'reward',
-//         amount: randomCoins,
-//         timestamp: serverTimestamp(),
-//         description: 'Mining Reward'
-//       });
-
-//       // Set 12 hour cooldown
-//       setTimeRemaining(12 * 60 * 60);
-//       setAdWatched(0);
-      
-//       toast.success(`Mining successful!`, {
-//         description: `You've earned ${randomCoins} Hero Coins`
-//       });
-//     } catch (error) {
-//       console.error('Error updating mining rewards:', error);
-//       toast.error('Failed to update mining rewards');
-//     } finally {
-//       setIsMining(false);
-//     }
-//   };
-
-//   const formatTimeRemaining = () => {
-//     if (timeRemaining === null) return '';
-
-//     const hours = Math.floor(timeRemaining / 3600);
-//     const minutes = Math.floor((timeRemaining % 3600) / 60);
-//     const seconds = timeRemaining % 60;
-
-//     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-//   };
-
-//   if (!user) {
-//     return (
-//       <div className="w-full max-w-md mx-auto">
-//         <div className="glass-card rounded-3xl p-8 shadow-lg text-center">
-//           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-//             <Coins className="w-8 h-8 text-primary" />
-//           </div>
-//           <h2 className="text-2xl font-bold mb-2">Login Required</h2>
-//           <p className="text-muted-foreground mb-6">
-//             You need to be logged in to start mining Hero Coins
-//           </p>
-//           <Button asChild className="rounded-xl">
-//             <Link to="/login">
-//               <LogIn className="mr-2 h-5 w-5" />
-//               Log In to Start Mining
-//             </Link>
-//           </Button>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   if (showAdPage) {
-//     return (
-//       <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4">
-//         <div className="w-full max-w-4xl bg-white rounded-lg overflow-hidden flex flex-col">
-//           {/* Close button (only visible when ad is complete) */}
-//           {canCloseAd && (
-//             <div className="flex justify-end p-2 bg-gray-100">
-//               <button
-//                 onClick={handleAdComplete}
-//                 className="text-gray-700 hover:text-gray-900 transition"
-//                 aria-label="Close ad"
-//               >
-//                 <X className="h-6 w-6" />
-//               </button>
-//             </div>
-//           )}
-          
-//           {/* Ad container */}
-//           <div 
-//             ref={adContainerRef}
-//             className="flex-1 flex items-center justify-center bg-gray-50 min-h-[250px] w-full"
-//           >
-//             {adLoading && !adError && (
-//               <div className="text-center p-4">
-//                 <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-600" />
-//                 <p className="mt-2 text-gray-600">Loading advertisement...</p>
-//               </div>
-//             )}
-            
-//             {adError && (
-//               <div className="text-center p-4">
-//                 <p className="text-red-600">Failed to load advertisement</p>
-//                 <Button 
-//                   onClick={() => setShowAdPage(false)}
-//                   className="mt-4"
-//                   variant="destructive"
-//                 >
-//                   Go Back
-//                 </Button>
-//               </div>
-//             )}
-//           </div>
-          
-//           {/* Ad status message */}
-//           <div className="p-3 bg-gray-100 text-center border-t">
-//             <p className="text-sm text-gray-600">
-//               {canCloseAd 
-//                 ? "Advertisement completed - you may now close"
-//                 : "Please watch the advertisement to completion (30 seconds)"}
-//             </p>
-//           </div>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="w-full max-w-md mx-auto">
-//       <div className="glass-card rounded-3xl p-8 shadow-lg">
-//         <div className="text-center mb-6">
-//           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-//             <Coins className="w-8 h-8 text-primary" />
-//           </div>
-//           <h2 className="text-2xl font-bold">Hero Coin Mining</h2>
-//           <p className="text-muted-foreground mt-2">
-//             Watch ads to earn Hero Coins (2 ads per session)
-//           </p>
-//         </div>
-
-//         <div className="space-y-6">
-//           <div className="bg-secondary/50 rounded-xl p-4">
-//             <div className="flex items-center justify-between">
-//               <span className="text-sm font-medium">Ads Watched</span>
-//               <span className="text-sm font-semibold">{adWatched}/2</span>
-//             </div>
-//           </div>
-
-//           {timeRemaining !== null && (
-//             <div className="bg-secondary/50 rounded-xl p-4">
-//               <div className="flex items-center mb-2">
-//                 <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
-//                 <span className="text-sm font-medium">Next mining available in:</span>
-//               </div>
-//               <div className="text-2xl font-mono text-center font-bold">
-//                 {formatTimeRemaining()}
-//               </div>
-//             </div>
-//           )}
-
-//           <Button
-//             className="w-full rounded-xl py-6 text-lg font-medium"
-//             disabled={timeRemaining !== null || isMining}
-//             onClick={startMining}
-//           >
-//             {isMining ? (
-//               <Loader2 className="h-5 w-5 animate-spin" />
-//             ) : timeRemaining !== null ? (
-//               <>
-//                 <Clock className="mr-2 h-5 w-5" />
-//                 Cooling Down
-//               </>
-//             ) : (
-//               <>
-//                 <PlayCircle className="mr-2 h-5 w-5" />
-//                 {adWatched === 0 ? 'Start Mining' : 'Watch Next Ad'}
-//               </>
-//             )}
-//           </Button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
 
 
 
 
 
-
-
-
-
-
-//////////working ad ////////////////////////////////////////////
 
 
 // import React, { useState, useEffect } from 'react';
@@ -890,6 +536,7 @@
 //   const [isMining, setIsMining] = useState(false);
 //   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
 //   const [adWindow, setAdWindow] = useState<Window | null>(null);
+//   const [progress, setProgress] = useState(0);
 //   const { user } = useAuth();
 
 //   // Check cooldown on mount
@@ -906,7 +553,7 @@
 //           const lastMiningTime = userData.lastMiningTime?.toDate();
 
 //           if (lastMiningTime) {
-//             const cooldownEnd = new Date(lastMiningTime.getTime() + (24 * 60 * 60 * 1000)); // 24h cooldown
+//             const cooldownEnd = new Date(lastMiningTime.getTime() + (24 * 60 * 60 * 1000));
 //             const now = new Date();
 
 //             if (cooldownEnd > now) {
@@ -935,11 +582,23 @@
 //     return () => interval && clearInterval(interval);
 //   }, [timeRemaining]);
 
+//   // Progress animation
+//   useEffect(() => {
+//     let progressInterval: NodeJS.Timeout;
+//     if (isMining) {
+//       let currentProgress = 0;
+//       progressInterval = setInterval(() => {
+//         currentProgress += 100/30;
+//         setProgress(Math.min(currentProgress, 100));
+//       }, 1000);
+//     }
+//     return () => progressInterval && clearInterval(progressInterval);
+//   }, [isMining]);
+
 //   const startMining = async () => {
 //     if (!user || timeRemaining !== null) return;
 
 //     try {
-//       // Open Adsterra direct link in new window
 //       const windowFeatures = 'width=600,height=800,scrollbars=yes';
 //       const newWindow = window.open(
 //         'https://www.effectiveratecpm.com/t3awz5wft?key=1e0a857f316e6d9479594d51d440faab',
@@ -955,7 +614,6 @@
 //       setAdWindow(newWindow);
 //       setIsMining(true);
 
-//       // Check if window is closed every 1 second
 //       const checkInterval = setInterval(() => {
 //         if (newWindow.closed) {
 //           clearInterval(checkInterval);
@@ -963,7 +621,6 @@
 //         }
 //       }, 1000);
 
-//       // Auto-complete after 30 seconds if window remains open
 //       setTimeout(() => {
 //         if (!newWindow.closed) {
 //           newWindow.close();
@@ -981,19 +638,18 @@
 //   const handleMiningSuccess = async () => {
 //     try {
 //       const userRef = doc(db, 'users', user!.uid);
-//       const randomCoins = Math.floor(Math.random() * 10) + 5; // 5-15 coins
+//       const randomCoins = Math.floor(Math.random() * 10) + 5;
 
 //       await updateDoc(userRef, {
 //         coins: increment(randomCoins),
-
 //         totalMined: increment(randomCoins),
 //         lastMiningTime: serverTimestamp()
 //       });
 
-//       setTimeRemaining(24 * 60 * 60); // 24h cooldown
+//       setTimeRemaining(24 * 60 * 60);
 //       toast.success('Mining successful!', {
 //         description: `You earned ${randomCoins} coins!`,
-//         icon: <BadgeCheck className="text-green-500" />
+//         icon: <BadgeCheck className="text-green-500 animate-bounce" />
 //       });
 //     } catch (error) {
 //       console.error('Mining completion error:', error);
@@ -1001,6 +657,7 @@
 //     } finally {
 //       setIsMining(false);
 //       setAdWindow(null);
+//       setProgress(0);
 //     }
 //   };
 
@@ -1014,16 +671,18 @@
 
 //   if (!user) {
 //     return (
-//       <div className="max-w-md mx-auto bg-white rounded-xl shadow-md p-6">
-//         <div className="text-center space-y-4">
-//           <Coins className="mx-auto h-12 w-12 text-blue-500" />
-//           <h2 className="text-2xl font-bold">Login Required</h2>
-//           <p className="text-gray-600">
+//       <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transition-all duration-300 hover:shadow-2xl">
+//         <div className="text-center space-y-6">
+//           <div className="animate-float">
+//             <Coins className="mx-auto h-16 w-16 text-blue-500 dark:text-blue-400" />
+//           </div>
+//           <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Login Required</h2>
+//           <p className="text-gray-600 dark:text-gray-300">
 //             Sign in to start mining and earning coins
 //           </p>
-//           <Button asChild className="w-full">
+//           <Button asChild className="w-full py-6 text-lg transition-transform hover:scale-105">
 //             <Link to="/login">
-//               <LogIn className="mr-2 h-4 w-4" />
+//               <LogIn className="mr-2 h-5 w-5" />
 //               Login to Continue
 //             </Link>
 //           </Button>
@@ -1033,54 +692,77 @@
 //   }
 
 //   return (
-//     <div className="max-w-md mx-auto bg-white rounded-xl shadow-md p-6">
-//       <div className="text-center space-y-6">
-//         <div className="space-y-2">
-//           <Coins className="mx-auto h-12 w-12 text-blue-500" />
-//           <h1 className="text-3xl font-bold">Daily Mining</h1>
-//           <p className="text-gray-600">
+//     <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transition-all duration-300 hover:shadow-2xl">
+//       <div className="text-center space-y-8">
+//         <div className="space-y-4">
+//           <div className="relative inline-block">
+//             <div className={`absolute inset-0 border-4 border-blue-200 dark:border-blue-900 rounded-full 
+//               ${isMining ? 'animate-ping' : ''}`}></div>
+//             <Coins className="h-16 w-16 text-blue-500 dark:text-blue-400 mx-auto relative" />
+//           </div>
+          
+//           <h1 className="text-4xl font-bold text-gray-800 dark:text-white">Daily Mining</h1>
+//           <p className="text-gray-600 dark:text-gray-300">
 //             Mine once every 24 hours by watching a short ad
 //           </p>
 //         </div>
 
 //         {timeRemaining ? (
-//           <div className="bg-yellow-50 p-4 rounded-lg">
-//             <div className="flex items-center justify-center gap-2">
-//               <Clock className="h-5 w-5 text-yellow-600" />
-//               <span className="font-semibold text-yellow-700">
+//           <div className="bg-yellow-100 dark:bg-yellow-900 p-5 rounded-xl animate-pulse-slow">
+//             <div className="flex items-center justify-center gap-3">
+//               <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+//               <span className="font-semibold text-yellow-700 dark:text-yellow-300">
 //                 Next available in: {formatTimeRemaining()}
 //               </span>
 //             </div>
 //           </div>
 //         ) : (
-//           <div className="bg-green-50 p-4 rounded-lg">
-//             <div className="flex items-center justify-center gap-2">
-//               <BadgeCheck className="h-5 w-5 text-green-600" />
-//               <span className="font-semibold text-green-700">
+//           <div className="bg-green-100 dark:bg-green-900 p-5 rounded-xl animate-fade-in">
+//             <div className="flex items-center justify-center gap-3">
+//               <BadgeCheck className="h-6 w-6 text-green-600 dark:text-green-400" />
+//               <span className="font-semibold text-green-700 dark:text-green-300">
 //                 Ready to mine!
 //               </span>
 //             </div>
 //           </div>
 //         )}
 
-//         <Button
-//           className="w-full py-6 text-lg"
-//           onClick={startMining}
-//           disabled={!!timeRemaining || isMining}
-//         >
-//           {isMining ? (
-//             <Loader2 className="h-5 w-5 animate-spin" />
-//           ) : timeRemaining ? (
-//             'Mining Cooldown'
-//           ) : (
-//             'Start Mining Now'
+//         <div className="relative">
+//           <Button
+//             className={`w-full py-7 text-xl transition-all duration-300 ${
+//               isMining ? 'bg-blue-600 hover:bg-blue-700' : 'hover:scale-105'
+//             }`}
+//             onClick={startMining}
+//             disabled={!!timeRemaining || isMining}
+//           >
+//             {isMining ? (
+//               <div className="flex items-center gap-3">
+//                 <Loader2 className="h-6 w-6 animate-spin" />
+//                 <span>Mining Progress</span>
+//               </div>
+//             ) : timeRemaining ? (
+//               'Mining Cooldown'
+//             ) : (
+//               'Start Mining Now'
+//             )}
+//           </Button>
+          
+//           {isMining && (
+//             <div className="absolute -bottom-6 w-full">
+//               <div className="h-2 bg-blue-100 dark:bg-blue-900 rounded-full overflow-hidden">
+//                 <div 
+//                   className="h-full bg-blue-500 transition-all duration-1000 ease-linear"
+//                   style={{ width: `${progress}%` }}
+//                 ></div>
+//               </div>
+//             </div>
 //           )}
-//         </Button>
+//         </div>
 
-//         <div className="text-sm text-gray-500">
-//           <p>• Clicking will open an ad in new window</p>
-//           <p>• Keep window open for 30 seconds to complete</p>
-//           <p>• Earn 5-15 coins per successful mining</p>
+//         <div className="text-sm text-gray-500 dark:text-gray-400 space-y-2">
+//           <p className="animate-fade-in-up">• Clicking will open an ad in new window</p>
+//           <p className="animate-fade-in-up delay-100">• Keep window open for 30 seconds to complete</p>
+//           <p className="animate-fade-in-up delay-200">• Earn 5-15 coins per successful mining</p>
 //         </div>
 //       </div>
 //     </div>
@@ -1090,21 +772,21 @@
 // export default MiningCard;
 
 
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Clock, Loader2, Coins, LogIn, BadgeCheck } from 'lucide-react';
+import { PlayCircle, Clock, Loader2, Coins, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, increment } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, increment, collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { Progress } from '@/components/ui/progress';
 
 const MiningCard = () => {
   const [isMining, setIsMining] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [adWindow, setAdWindow] = useState<Window | null>(null);
-  const [progress, setProgress] = useState(0);
   const { user } = useAuth();
 
   // Check cooldown on mount
@@ -1128,6 +810,14 @@ const MiningCard = () => {
               setTimeRemaining(Math.ceil((cooldownEnd.getTime() - now.getTime()) / 1000));
             }
           }
+        } else {
+          await setDoc(userRef, {
+            displayName: user.displayName || user.email?.split('@')[0],
+            email: user.email,
+            coins: 0,
+            totalMined: 0,
+            createdAt: serverTimestamp(),
+          });
         }
       } catch (error) {
         console.error('Error checking cooldown:', error);
@@ -1150,20 +840,25 @@ const MiningCard = () => {
     return () => interval && clearInterval(interval);
   }, [timeRemaining]);
 
-  // Progress animation
+  // Mining progress animation
   useEffect(() => {
     let progressInterval: NodeJS.Timeout;
     if (isMining) {
-      let currentProgress = 0;
       progressInterval = setInterval(() => {
-        currentProgress += 100/30;
-        setProgress(Math.min(currentProgress, 100));
-      }, 1000);
+        setProgress((prev) => {
+          const newProgress = prev + 1;
+          if (newProgress >= 100) {
+            clearInterval(progressInterval);
+            return 100;
+          }
+          return newProgress;
+        });
+      }, 50);
     }
     return () => progressInterval && clearInterval(progressInterval);
   }, [isMining]);
 
-  const startMining = async () => {
+  const startMining = () => {
     if (!user || timeRemaining !== null) return;
 
     try {
@@ -1182,6 +877,7 @@ const MiningCard = () => {
       setAdWindow(newWindow);
       setIsMining(true);
 
+      // Check if window is closed every second
       const checkInterval = setInterval(() => {
         if (newWindow.closed) {
           clearInterval(checkInterval);
@@ -1189,6 +885,7 @@ const MiningCard = () => {
         }
       }, 1000);
 
+      // Auto-complete after 30 seconds if window remains open
       setTimeout(() => {
         if (!newWindow.closed) {
           newWindow.close();
@@ -1206,7 +903,7 @@ const MiningCard = () => {
   const handleMiningSuccess = async () => {
     try {
       const userRef = doc(db, 'users', user!.uid);
-      const randomCoins = Math.floor(Math.random() * 10) + 5;
+      const randomCoins = Math.floor(Math.random() * 10) + 5; // 5-15 coins
 
       await updateDoc(userRef, {
         coins: increment(randomCoins),
@@ -1214,10 +911,18 @@ const MiningCard = () => {
         lastMiningTime: serverTimestamp()
       });
 
-      setTimeRemaining(24 * 60 * 60);
+      // Record transaction
+      await addDoc(collection(db, 'transactions'), {
+        userId: user!.uid,
+        type: 'reward',
+        amount: randomCoins,
+        timestamp: serverTimestamp(),
+        description: 'Mining Reward'
+      });
+
+      setTimeRemaining(24 * 60 * 60); // 24h cooldown
       toast.success('Mining successful!', {
         description: `You earned ${randomCoins} coins!`,
-        icon: <BadgeCheck className="text-green-500 animate-bounce" />
       });
     } catch (error) {
       console.error('Mining completion error:', error);
@@ -1234,24 +939,24 @@ const MiningCard = () => {
     const hours = Math.floor(timeRemaining / 3600);
     const minutes = Math.floor((timeRemaining % 3600) / 60);
     const seconds = timeRemaining % 60;
-    return `${hours}h ${minutes}m ${seconds}s`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
   if (!user) {
     return (
-      <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transition-all duration-300 hover:shadow-2xl">
-        <div className="text-center space-y-6">
-          <div className="animate-float">
-            <Coins className="mx-auto h-16 w-16 text-blue-500 dark:text-blue-400" />
+      <div className="w-full max-w-md mx-auto">
+        <div className="glass-card rounded-3xl p-8 shadow-lg text-center">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Coins className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Login Required</h2>
-          <p className="text-gray-600 dark:text-gray-300">
-            Sign in to start mining and earning coins
+          <h2 className="text-2xl font-bold mb-2">Login Required</h2>
+          <p className="text-muted-foreground mb-6">
+            You need to be logged in to start mining Hero Coins
           </p>
-          <Button asChild className="w-full py-6 text-lg transition-transform hover:scale-105">
+          <Button asChild className="rounded-xl">
             <Link to="/login">
               <LogIn className="mr-2 h-5 w-5" />
-              Login to Continue
+              Log In to Start Mining
             </Link>
           </Button>
         </div>
@@ -1260,77 +965,66 @@ const MiningCard = () => {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transition-all duration-300 hover:shadow-2xl">
-      <div className="text-center space-y-8">
-        <div className="space-y-4">
-          <div className="relative inline-block">
-            <div className={`absolute inset-0 border-4 border-blue-200 dark:border-blue-900 rounded-full 
-              ${isMining ? 'animate-ping' : ''}`}></div>
-            <Coins className="h-16 w-16 text-blue-500 dark:text-blue-400 mx-auto relative" />
+    <div className="w-full max-w-md mx-auto">
+      <div className="glass-card rounded-3xl p-8 shadow-lg">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Coins className="w-8 h-8 text-primary" />
           </div>
-          
-          <h1 className="text-4xl font-bold text-gray-800 dark:text-white">Daily Mining</h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Mine once every 24 hours by watching a short ad
+          <h2 className="text-2xl font-bold">Hero Coin Mining</h2>
+          <p className="text-muted-foreground mt-2">
+            Watch an ad to earn Hero Coins
           </p>
         </div>
 
-        {timeRemaining ? (
-          <div className="bg-yellow-100 dark:bg-yellow-900 p-5 rounded-xl animate-pulse-slow">
-            <div className="flex items-center justify-center gap-3">
-              <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-              <span className="font-semibold text-yellow-700 dark:text-yellow-300">
-                Next available in: {formatTimeRemaining()}
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-green-100 dark:bg-green-900 p-5 rounded-xl animate-fade-in">
-            <div className="flex items-center justify-center gap-3">
-              <BadgeCheck className="h-6 w-6 text-green-600 dark:text-green-400" />
-              <span className="font-semibold text-green-700 dark:text-green-300">
-                Ready to mine!
-              </span>
-            </div>
-          </div>
-        )}
-
-        <div className="relative">
-          <Button
-            className={`w-full py-7 text-xl transition-all duration-300 ${
-              isMining ? 'bg-blue-600 hover:bg-blue-700' : 'hover:scale-105'
-            }`}
-            onClick={startMining}
-            disabled={!!timeRemaining || isMining}
-          >
-            {isMining ? (
-              <div className="flex items-center gap-3">
-                <Loader2 className="h-6 w-6 animate-spin" />
-                <span>Mining Progress</span>
-              </div>
-            ) : timeRemaining ? (
-              'Mining Cooldown'
-            ) : (
-              'Start Mining Now'
-            )}
-          </Button>
-          
+        <div className="space-y-6">
+          {/* Mining progress */}
           {isMining && (
-            <div className="absolute -bottom-6 w-full">
-              <div className="h-2 bg-blue-100 dark:bg-blue-900 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-blue-500 transition-all duration-1000 ease-linear"
-                  style={{ width: `${progress}%` }}
-                ></div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span>Mining progress</span>
+                <span>{progress}%</span>
+              </div>
+              <Progress value={progress} className="h-2" />
+            </div>
+          )}
+
+          {/* Cooldown timer */}
+          {timeRemaining !== null && (
+            <div className="bg-secondary/50 rounded-xl p-4">
+              <div className="flex items-center mb-2">
+                <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
+                <span className="text-sm font-medium">Next mining available in:</span>
+              </div>
+              <div className="text-2xl font-mono text-center font-bold">
+                {formatTimeRemaining()}
               </div>
             </div>
           )}
-        </div>
 
-        <div className="text-sm text-gray-500 dark:text-gray-400 space-y-2">
-          <p className="animate-fade-in-up">• Clicking will open an ad in new window</p>
-          <p className="animate-fade-in-up delay-100">• Keep window open for 30 seconds to complete</p>
-          <p className="animate-fade-in-up delay-200">• Earn 5-15 coins per successful mining</p>
+          {/* Start mining button */}
+          <Button
+            className="w-full rounded-xl py-6 text-lg font-medium"
+            disabled={isMining || timeRemaining !== null}
+            onClick={startMining}
+          >
+            {isMining ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Mining...
+              </>
+            ) : timeRemaining !== null ? (
+              <>
+                <Clock className="mr-2 h-5 w-5" />
+                Cooling Down
+              </>
+            ) : (
+              <>
+                <PlayCircle className="mr-2 h-5 w-5" />
+                Start Mining
+              </>
+            )}
+          </Button>
         </div>
       </div>
     </div>
