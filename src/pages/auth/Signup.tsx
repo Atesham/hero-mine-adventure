@@ -101,8 +101,10 @@ useEffect(() => {
 const handleSendOTP = async (email: string) => {
   try {
     setLoading(true);
-    const response = await axios.post("http://localhost:3000/api/send-otp", { email });
-    if (response.data.success) {
+    // const response = await axios.post("http://localhost:3000/api/send-otp", { email });
+   const response = await axios.post("https://hero-mine-adventure.vercel.app/api/send-otp", { email });
+    
+      if (response.data.success) {
       setOTPSent(true);
       toast.success("OTP sent to your email!");
     } else {
@@ -127,7 +129,9 @@ const handleResendOTP = async (email: string) => {
   try {
     setLoading(true);
     setOtpDigits(['', '', '', '', '', '']); // Clear existing OTP digits
-    const response = await axios.post("http://localhost:3000/api/send-otp", { email });
+    // const response = await axios.post("http://localhost:3000/api/send-otp", { email });
+    const response = await axios.post("https://hero-mine-adventure.vercel.app/api/send-otp", { email });
+
     if (response.data.success) {
       toast.success("New OTP sent to your email!");
       otpInputRefs.current[0]?.focus(); // Focus on first OTP input
@@ -148,7 +152,9 @@ const handleResendOTP = async (email: string) => {
   const handleVerifyOTP = async (email: string, otp: number) => {
     try {
       setLoading(true);
-      const response = await axios.post('http://localhost:3000/api/verify-otp', { email, otp });
+      // const response = await axios.post('http://localhost:3000/api/verify-otp', { email, otp });
+      const response = await axios.post("https://hero-mine-adventure.vercel.app/api/send-otp", { email,otp });
+
       if (response.data.success) {
         toast.success('OTP verified!');
         const formData = watch();
