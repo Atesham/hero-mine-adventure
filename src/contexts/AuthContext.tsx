@@ -7,6 +7,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   updateProfile,
+  sendPasswordResetEmail,
   User as FirebaseUser
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
@@ -21,6 +22,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+
   isGoogleAuthAvailable: boolean;
   generateReferralCode: () => string;
 }
@@ -85,6 +88,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return unsubscribe;
   }, []);
+
+
+  const resetPassword = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast.success('Password reset email sent!', {
+        description: 'Please check your inbox for instructions to reset your password.',
+        duration: 5000
+      });
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      
+      if (error.code === 'auth/user-not-found') {
+        throw new Error('No account found with this email address.');
+      } else if (error.code === 'auth/invalid-email') {
+        throw new Error('Please enter a valid email address.');
+      } else if (error.code === 'auth/too-many-requests') {
+        throw new Error('Too many requests. Please try again later.');
+      } else {
+        throw new Error(error.message || 'Failed to send password reset email');
+      }
+    }
+  };
 
   const generateReferralCode = () => {
     return generateRandomReferralCode(
@@ -235,6 +261,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     loginWithGoogle,
     logout,
+    resetPassword, // Add the new method to the context value
     isGoogleAuthAvailable,
     generateReferralCode
   };

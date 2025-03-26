@@ -270,20 +270,12 @@ const Wallet = () => {
                       ))}
 
                       {transactions.length > 5 && (
-                        // <div className="text-center mt-4">
-                        //   <a
-                        //     href="/transactions"
-                        //     className="text-primary hover:underline text-sm font-medium"
-                        //   >
-                        //     View All Transactions →
-                        //   </a>
-                        // </div>
                         <Button asChild variant="outline" className="mt-4">
-  <Link to="/transactions">
-    View All Transactions
-    <ArrowRight className="ml-2 h-4 w-4" />
-  </Link>
-</Button>
+                          <Link to="/transactions">
+                            View All Transactions
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Link>
+                        </Button>
                       )}
                     </>
                   ) : (
