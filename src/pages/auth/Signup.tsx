@@ -431,6 +431,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { getFirestore, doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore"; 
 import Navbar from '@/components/layout/Navbar';
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, onAuthStateChanged } from "firebase/auth";
+
 import { motion } from 'framer-motion';
 
 const auth = getAuth(app);
@@ -589,10 +590,12 @@ const Signup = () => {
       await setDoc(doc(db, "users", userCredential.user.uid), userData);
 
       // In your signup onSubmit function
+// Send verification email - UPDATED IMPLEMENTATION
 await sendEmailVerification(userCredential.user, {
-  url: `${window.location.origin}/verify-email`, // Changed to a dedicated route
+  url: `${window.location.origin}/verify-email`,
   handleCodeInApp: true
 });
+
       setEmailSent(true);
       setCountdown(30); // Reset countdown
       toast.success('Verification email sent! Please check your inbox.');
