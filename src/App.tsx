@@ -8,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 
 // Pages
 import Index from "./pages/Index";
+import VerifyEmail from '@/pages/VerifyEmail';
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import Mining from "./pages/Mining";
@@ -72,6 +73,7 @@ function App() {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/mining" element={<Mining />} />
               <Route path="/wallet" element={<Wallet />} />
               <Route path="/leaderboard" element={<Leaderboard />} />

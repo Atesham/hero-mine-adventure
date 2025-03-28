@@ -588,12 +588,11 @@ const Signup = () => {
       // Store user data in Firestore
       await setDoc(doc(db, "users", userCredential.user.uid), userData);
 
-      // Send verification email
-      await sendEmailVerification(userCredential.user, {
-        url: `${window.location.origin}/login?verified=true&newuser=true`,
-        handleCodeInApp: true
-      });
-      
+      // In your signup onSubmit function
+await sendEmailVerification(userCredential.user, {
+  url: `${window.location.origin}/verify-email`, // Changed to a dedicated route
+  handleCodeInApp: true
+});
       setEmailSent(true);
       setCountdown(30); // Reset countdown
       toast.success('Verification email sent! Please check your inbox.');
