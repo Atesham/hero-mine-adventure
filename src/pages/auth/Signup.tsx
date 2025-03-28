@@ -529,7 +529,7 @@ const Signup = () => {
           await user.getIdToken(true);
           setVerificationChecked(true);
           toast.success('Email verified successfully! Redirecting...');
-          navigate('/dashboard'); // Redirect to your app's main page
+          navigate('/mining'); // Redirect to your app's main page
         }
         prevUserRef.current = user;
       }
