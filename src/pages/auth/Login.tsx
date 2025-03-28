@@ -669,6 +669,7 @@
 
 
 
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -693,6 +694,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
   const navigate = useNavigate();
   const { login, loginWithGoogle, isGoogleAuthAvailable, resetPassword, user } = useAuth();
   const auth = getAuth();
@@ -701,6 +703,8 @@ const Login = () => {
   useEffect(() => {
     if (user?.emailVerified) {
       navigate('/mining');
+    } else if (user) {
+      setNeedsVerification(true);
     }
   }, [user, navigate]);
 
@@ -708,16 +712,28 @@ const Login = () => {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    setNeedsVerification(false);
 
     try {
       await login(email, password);
-      // Immediately check verification status after login
-      if (auth.currentUser && !auth.currentUser.emailVerified) {
-        toast.error('Please verify your email before logging in');
-        await auth.signOut();
+      
+      // After successful login, check verification status
+      if (auth.currentUser) {
+        if (!auth.currentUser.emailVerified) {
+          setNeedsVerification(true);
+          toast.error('Please verify your email to continue');
+          await auth.signOut();
+          return;
+        }
+        // If verified, proceed to mining page
+        navigate('/mining');
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to log in');
+      if (err.code === 'auth/email-not-verified') {
+        setNeedsVerification(true);
+      } else {
+        setError(err.message || 'Failed to log in');
+      }
     } finally {
       setLoading(false);
     }
@@ -775,8 +791,8 @@ const Login = () => {
     }
   };
 
-  // Show verification prompt if user exists but isn't verified
-  if (user && !user.emailVerified) {
+  // Show verification prompt if needed
+  if (needsVerification) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
@@ -788,7 +804,7 @@ const Login = () => {
               </div>
               <h2 className="text-2xl font-bold mb-4">Email Verification Required</h2>
               <p className="text-muted-foreground mb-6">
-                Please verify your email at <span className="font-medium text-foreground">{user.email}</span> to continue.
+                Please verify your email at <span className="font-medium text-foreground">{email}</span> to continue.
               </p>
               
               <div className="space-y-3">
@@ -805,10 +821,10 @@ const Login = () => {
                   className="w-full"
                   onClick={async () => {
                     await auth.signOut();
-                    navigate('/signup');
+                    setNeedsVerification(false);
                   }}
                 >
-                  Sign Up With Different Account
+                  Try Different Account
                 </Button>
 
                 <div className="pt-4 text-sm text-muted-foreground">
