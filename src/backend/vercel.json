@@ -4,6 +4,16 @@
       {
         "src": "api/index.js",
         "use": "@vercel/node"
+      },
+      {
+        "src": "/verify-email",
+        "dest": "/verify-email",
+        "status": 200
+      },
+      {
+        "src": "/verify-email(.*)",
+        "dest": "/verify-email",
+        "status": 200
       }
     ],
     "routes": [
