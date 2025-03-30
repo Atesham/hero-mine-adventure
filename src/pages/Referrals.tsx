@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { toast } from 'sonner';
-import { getUserReferrals, getReferralStats, generateReferralLink, getUserReferralCode } from '@/referralService';
+import { getUserReferrals, getReferralStats, generateReferralLink, getUserReferralCode } from '@/services/referralService';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Users, Award, RefreshCw, Download, Search, Copy, Share, Link as LinkIcon } from 'lucide-react';
@@ -166,76 +165,57 @@ const ReferralsPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">
       <Navbar />
-      <main className="flex-1 pt-24 md:pt-28 py-12">
-      <div className="container px-4 mx-auto">
+      <main className="flex-1 py-10">
+        <div className="container px-4 mx-auto">
           <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-4 pt-4">Your Referrals</h1>
-          <p className="text-muted-foreground">
+            <h1 className="text-3xl font-bold mb-2">Your Referrals</h1>
+            <p className="text-muted-foreground">
               Track all your referrals and rewards in one place
             </p>
-          </div>          
+          </div>
+          
           <Card className="mb-8">
-  <CardHeader className="pb-4">
-    <CardTitle>Your Referral Link</CardTitle>
-    <CardDescription>Share this link with friends to earn bonus coins</CardDescription>
-  </CardHeader>
-  <CardContent>
-    <div className="flex flex-col space-y-4">
-      {loading ? (
-        // Improved Skeleton Loader
-        <div className="space-y-3">
-          <div className="flex gap-2">
-            <div className="flex-1 h-10 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-lg animate-pulse"></div>
-            <div className="h-10 w-10 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-lg animate-pulse"></div>
-            {navigator.share && (
-              <div className="h-10 w-10 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-lg animate-pulse"></div>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-4 w-4 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-full animate-pulse"></div>
-            <div className="h-4 w-40 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-full animate-pulse"></div>
-          </div>
-        </div>
-      ) : (
-        // Actual Referral Link UI
-        <>
-          <div className="flex gap-2">
-            <Input 
-              value={referralLink} 
-              readOnly 
-              className="font-mono text-sm hover:cursor-pointer"
-              onClick={copyReferralLink}
-            />
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={copyReferralLink}
-              title="Copy to clipboard"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-            {navigator.share && (
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={shareReferralLink}
-                title="Share link"
-              >
-                <Share className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <LinkIcon className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
-              Referral Code: <span className="font-mono">{referralCode}</span>
-            </span>
-          </div>
-        </>
-      )}
-    </div>
-  </CardContent>
-</Card>
+            <CardHeader className="pb-4">
+              <CardTitle>Your Referral Link</CardTitle>
+              <CardDescription>Share this link with friends to earn bonus coins</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col space-y-4">
+                <div className="flex space-x-2">
+                  <Input 
+                    value={referralLink} 
+                    readOnly 
+                    className="font-mono text-sm"
+                    onClick={() => copyReferralLink()}
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={copyReferralLink}
+                    title="Copy to clipboard"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  {navigator.share && (
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={shareReferralLink}
+                      title="Share link"
+                    >
+                      <Share className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <LinkIcon className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Referral Code: <span className="font-mono">{referralCode}</span></span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="glass-card rounded-xl p-6 flex items-center">
               <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mr-4">

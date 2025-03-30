@@ -1,4 +1,3 @@
-
 import { db } from '@/lib/firebase';
 import { collection, query, where, orderBy, getDocs, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { toast } from 'sonner';
@@ -111,13 +110,44 @@ export const getUserReferralCode = async (userId: string): Promise<string> => {
 };
 
 // Generate a random referral code
-export const generateRandomReferralCode = (displayName: string): string => {
-  const namePrefix = displayName.split(' ')
-    .map(name => name[0])
+
+export const generateRandomReferralCode = async (displayName: string): Promise<string> => {
+  // Generate initials from display name (2-3 characters)
+  const initials = displayName
+    .split(' ')
+    .filter(name => name.length > 0)
+    .slice(0, 3) // Take up to 3 names
+    .map(name => name[0].toUpperCase())
     .join('')
-    .toUpperCase() || 'HC';
-  const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
-  return `${namePrefix}-${randomPart}`;
+    .padEnd(2, 'HC'); // Default to HC if not enough initials
+
+  // Generate random alphanumeric string (6 characters)
+  const randomChars = () => Math.random().toString(36).substring(2, 8).toUpperCase();
+
+  let isUnique = false;
+  let attempts = 0;
+  const maxAttempts = 5;
+  let code = '';
+
+  while (!isUnique && attempts < maxAttempts) {
+    attempts++;
+    code = `${initials}${randomChars()}`.replace(/-/g, ''); // Remove any hyphens
+    
+    // Check if code exists in Firestore
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('referralCode', '==', code));
+    const querySnapshot = await getDocs(q);
+    
+    isUnique = querySnapshot.empty;
+  }
+
+  // If still not unique after attempts, append timestamp
+  if (!isUnique) {
+    const timestamp = Date.now().toString(36).toUpperCase().slice(-4);
+    code = `${initials}${randomChars().slice(0, 4)}${timestamp}`;
+  }
+
+  return code;
 };
 
 // Get total referral stats

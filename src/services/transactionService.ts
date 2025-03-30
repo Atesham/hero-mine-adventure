@@ -59,9 +59,6 @@ export const getUserWalletData = async (userId: string) => {
         counterpartyAddress: data.counterpartyAddress,
       };
     });
-
-    console.log("Parsed Transactions:", transactions);
-
     return {
       balance: userData.coins || 0,
       totalMined: userData.totalMined || 0,
@@ -220,3 +217,4 @@ export const getTopMiners = async (maxLimit = 20) => {
     throw error;
   }
 };
+

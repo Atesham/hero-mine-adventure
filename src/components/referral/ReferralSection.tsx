@@ -1,151 +1,3 @@
-
-// import React, { useState, useEffect } from 'react';
-// import { useAuth } from '@/contexts/AuthContext';
-// import { Button } from '@/components/ui/button';
-// import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-// import { Input } from '@/components/ui/input';
-// import { toast } from 'sonner';
-// import { Users, Copy, Gift, UserPlus, ArrowRight, Link, Award, RefreshCw } from 'lucide-react';
-// import { getUserReferrals, generateReferralLink, getUserReferralCode, getReferralStats } from '@/referralService';
-// import { Link as RouterLink } from 'react-router-dom';
-// import inviteImage from '@/assets/invite.png';
-
-// interface ReferralData {
-//   referralCode: string;
-//   totalReferrals: number;
-//   totalRewards: number;
-// }
-
-// const ReferralSection = () => {
-//   const { user } = useAuth();
-//   const [referralData, setReferralData] = useState<ReferralData | null>(null);
-//   const [referrals, setReferrals] = useState<any[]>([]);
-//   const [loading, setLoading] = useState(true);
-//   const [referralLink, setReferralLink] = useState('');
-//   const [refreshing, setRefreshing] = useState(false);
-//   const [error, setError] = useState<string | null>(null);
-
-//   const fetchReferralData = async () => {
-//     if (!user) {
-//       setLoading(false);
-//       setError("You must be logged in to see referral data");
-//       return;
-//     }
-
-//     try {
-//       setLoading(true);
-//       setError(null);
-//       console.log('Fetching referral data for user:', user.uid);
-
-//       // Get user's referral code
-//       const code = await getUserReferralCode(user.uid);
-//       console.log('Retrieved referral code:', code);
-
-//       if (!code) {
-//         console.error("No referral code returned");
-//         setError("Could not retrieve your referral code");
-//         return;
-//       }
-
-//       // Get user's referrals
-//       const userReferrals = await getUserReferrals(user.uid);
-//       const stats = await getReferralStats(user.uid);
-
-//       setReferralData({
-//         referralCode: code,
-//         totalReferrals: stats.total,
-//         totalRewards: stats.totalRewards
-//       });
-
-//       setReferrals(userReferrals);
-
-//       // Generate referral link
-//       const link = generateReferralLink(code);
-//       console.log('Generated referral link:', link);
-//       setReferralLink(link);
-//     } catch (error: any) {
-//       console.error('Error fetching referral data:', error);
-//       setError(error.message || "Failed to load referral data");
-//     } finally {
-//       setLoading(false);
-//       setRefreshing(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchReferralData();
-//   }, [user]);
-
-//   const refreshReferrals = () => {
-//     setRefreshing(true);
-//     fetchReferralData();
-//   };
-
-//   const copyReferralLink = () => {
-//     if (!referralLink) {
-//       toast.error('No referral link to copy');
-//       return;
-//     }
-
-//     navigator.clipboard.writeText(referralLink)
-//       .then(() => {
-//         toast.success('Referral link copied to clipboard!');
-//       })
-//       .catch((err) => {
-//         console.error('Failed to copy:', err);
-//         toast.error('Failed to copy referral link');
-//       });
-//   };
-
-//   const shareReferralLink = async () => {
-//     if (!referralLink) {
-//       toast.error('No referral link to share');
-//       return;
-//     }
-
-//     if (navigator.share) {
-//       try {
-//         await navigator.share({
-//           title: 'Join Hero Coin',
-//           text: 'Sign up for Hero Coin using my referral link and get 10 free coins!',
-//           url: referralLink
-//         });
-//         toast.success('Referral link shared successfully!');
-//       } catch (error) {
-//         console.error('Error sharing:', error);
-//         copyReferralLink();
-//       }
-//     } else {
-//       copyReferralLink();
-//     }
-//   };
-
-//   if (loading) {
-//     return (
-//       <div className="text-center py-10">
-//         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 animate-pulse">
-//           <Users className="w-8 h-8 text-primary" />
-//         </div>
-//         <h3 className="mt-4 text-lg font-semibold">Loading referral data...</h3>
-//       </div>
-//     );
-//   }
-
-//   if (error) {
-//     return (
-//       <div className="text-center py-10">
-//         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100">
-//           <Users className="w-8 h-8 text-red-500" />
-//         </div>
-//         <h3 className="mt-4 text-lg font-semibold text-red-500">{error}</h3>
-//         <Button onClick={refreshReferrals} className="mt-4">
-//           Try Again
-//         </Button>
-//       </div>
-//     );
-//   }
-
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -153,91 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Users, Copy, Gift, UserPlus, ArrowRight, Link, Award, RefreshCw } from 'lucide-react';
-import { getUserReferrals, generateReferralLink, getUserReferralCode, getReferralStats } from '@/referralService';
+import { getUserReferrals, generateReferralLink, getUserReferralCode, getReferralStats } from '@/services/referralService';
 import { Link as RouterLink } from 'react-router-dom';
 import inviteImage from '@/assets/invite.png';
-
-// Skeleton Loading Component
-const ReferralSkeleton = () => (
-  <section className="py-16 bg-gradient-to-br from-primary/5 to-secondary/10">
-    <div className="container px-4 mx-auto">
-      <div className="text-center mb-12">
-        <div className="h-10 w-64 bg-gray-200 dark:bg-gray-700 rounded mx-auto mb-4"></div>
-        <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div>
-      </div>
-
-      <div className="max-w-4xl mx-auto">
-        <div className="glass-card rounded-xl p-6 md:p-8 mb-8">
-          <div className="flex flex-col md:flex-row items-center gap-6 mb-8">
-            <div className="md:w-1/3">
-              <div className="w-full max-w-[240px] h-[240px] bg-gray-200 dark:bg-gray-700 rounded-full mx-auto"></div>
-            </div>
-
-            <div className="md:w-2/3 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[1, 2, 3].map((item) => (
-                  <div key={item} className="text-center p-4 rounded-lg bg-primary/5">
-                    <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-3"></div>
-                    <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mx-auto mb-2"></div>
-                    <div className="h-8 w-1/2 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div>
-                  </div>
-                ))}
-              </div>
-
-              <div>
-                <div className="h-5 w-1/3 bg-gray-200 dark:bg-gray-700 rounded mb-3"></div>
-                <div className="flex space-x-2">
-                  <div className="flex-1 h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                  <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                </div>
-                <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {[1, 2, 3].map((item) => (
-                    <div key={item} className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="h-5 w-1/4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[1, 2, 3].map((item) => (
-                <div key={item} className="flex flex-col items-center text-center p-4 bg-primary/5 rounded-lg">
-                  <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full mb-3"></div>
-                  <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded"></div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="glass-card rounded-xl overflow-hidden">
-          <div className="h-14 bg-gray-200 dark:bg-gray-700"></div>
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-4">
-              <div className="h-5 w-1/4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-              <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
-            </div>
-
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="flex items-center justify-between p-4 bg-secondary/20 rounded-lg mb-3">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 mr-3"></div>
-                  <div>
-                    <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                    <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                  </div>
-                </div>
-                <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-);
 
 interface ReferralData {
   referralCode: string;
@@ -253,90 +23,113 @@ const ReferralSection = () => {
   const [referralLink, setReferralLink] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  
   const fetchReferralData = async () => {
     if (!user) {
       setLoading(false);
       setError("You must be logged in to see referral data");
       return;
     }
-
+    
     try {
       setLoading(true);
       setError(null);
-
+      console.log('Fetching referral data for user:', user.uid);
+      
+      // Get user's referral code
       const code = await getUserReferralCode(user.uid);
+      console.log('Retrieved referral code:', code);
+      
       if (!code) {
+        console.error("No referral code returned");
         setError("Could not retrieve your referral code");
         return;
       }
-
-      const [userReferrals, stats] = await Promise.all([
-        getUserReferrals(user.uid),
-        getReferralStats(user.uid)
-      ]);
-
+      
+      // Get user's referrals
+      const userReferrals = await getUserReferrals(user.uid);
+      const stats = await getReferralStats(user.uid);
+      
       setReferralData({
         referralCode: code,
         totalReferrals: stats.total,
         totalRewards: stats.totalRewards
       });
-
+      
       setReferrals(userReferrals);
-      setReferralLink(generateReferralLink(code));
+      
+      // Generate referral link
+      const link = generateReferralLink(code);
+      console.log('Generated referral link:', link);
+      setReferralLink(link);
     } catch (error: any) {
+      console.error('Error fetching referral data:', error);
       setError(error.message || "Failed to load referral data");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
-
+  
   useEffect(() => {
     fetchReferralData();
   }, [user]);
-
+  
   const refreshReferrals = () => {
     setRefreshing(true);
     fetchReferralData();
   };
-
+  
   const copyReferralLink = () => {
     if (!referralLink) {
       toast.error('No referral link to copy');
       return;
     }
+    
     navigator.clipboard.writeText(referralLink)
-      .then(() => toast.success('Referral link copied to clipboard!'))
-      .catch(() => toast.error('Failed to copy referral link'));
+      .then(() => {
+        toast.success('Referral link copied to clipboard!');
+      })
+      .catch((err) => {
+        console.error('Failed to copy:', err);
+        toast.error('Failed to copy referral link');
+      });
   };
-
+  
   const shareReferralLink = async () => {
     if (!referralLink) {
       toast.error('No referral link to share');
       return;
     }
-
-    try {
-      if (navigator.share) {
+    
+    if (navigator.share) {
+      try {
         await navigator.share({
           title: 'Join Hero Coin',
           text: 'Sign up for Hero Coin using my referral link and get 10 free coins!',
           url: referralLink
         });
         toast.success('Referral link shared successfully!');
-      } else {
+      } catch (error) {
+        console.error('Error sharing:', error);
         copyReferralLink();
       }
-    } catch (error) {
+    } else {
       copyReferralLink();
     }
   };
-
+  
   if (loading) {
-    return <ReferralSkeleton />;
+    return (
+      <div className="text-center py-10">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 animate-pulse">
+          <Users className="w-8 h-8 text-primary" />
+        </div>
+        <h3 className="mt-4 text-lg font-semibold">Loading referral data...</h3>
+      </div>
+    );
   }
-
+  
   if (error) {
     return (
       <div className="text-center py-10">
@@ -350,6 +143,7 @@ const ReferralSection = () => {
       </div>
     );
   }
+  
   return (
     <section className="py-16 bg-gradient-to-br from-primary/5 to-secondary/10">
       <div className="container px-4 mx-auto">
@@ -359,37 +153,14 @@ const ReferralSection = () => {
             Invite your friends to join Hero Coin and both of you will earn bonus coins. You get 25 coins for each friend who joins!
           </p>
         </div>
-
+        
         <div className="max-w-4xl mx-auto">
           <div className="glass-card rounded-xl p-6 md:p-8 mb-8">
             <div className="flex flex-col md:flex-row items-center gap-6 mb-8">
               <div className="md:w-1/3">
-
-
-
-                <div className="relative w-full max-w-[240px] mx-auto">
-                  {/* Outer Glow Effect - Crypto Themed */}
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-r 
-                  from-blue-500 via-indigo-600 to-purple-700 
-                  blur-xl opacity-40"></div>
-
-                  {/* Dynamic Light Waves (Subtle Pulsing Effect) */}
-                  <div className="absolute inset-0 rounded-full opacity-30 
-                  bg-radial-gradient(circle, rgba(0, 150, 255, 0.3) 15%, 
-                  rgba(110, 80, 255, 0.15) 50%, 
-                  transparent 80%) animate-pulse"></div>
-
-                  {/* Invite Image with Premium Styling */}
-                  <img
-                    src={inviteImage}
-                    alt="Invite Friends & Earn Rewards"
-                    className="relative w-full rounded-full border-2 border-blue-400 
-               shadow-md shadow-indigo-500 p-2 bg-black/50 
-               transition-transform transform hover:scale-105"
-                  />
-                </div>
+                <img src={inviteImage} alt="Invite friends" className="w-full max-w-[240px] mx-auto hover-scale" />
               </div>
-
+              
               <div className="md:w-2/3 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="text-center p-4 rounded-lg bg-primary/5">
@@ -399,7 +170,7 @@ const ReferralSection = () => {
                     <h3 className="font-semibold mb-1">Your Reward</h3>
                     <p className="text-2xl font-bold text-primary">25 Coins</p>
                   </div>
-
+                  
                   <div className="text-center p-4 rounded-lg bg-primary/5">
                     <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
                       <UserPlus className="w-6 h-6 text-primary" />
@@ -407,7 +178,7 @@ const ReferralSection = () => {
                     <h3 className="font-semibold mb-1">Total Referrals</h3>
                     <p className="text-2xl font-bold text-primary">{referralData?.totalReferrals || 0}</p>
                   </div>
-
+                  
                   <div className="text-center p-4 rounded-lg bg-primary/5">
                     <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Award className="w-6 h-6 text-primary" />
@@ -416,7 +187,7 @@ const ReferralSection = () => {
                     <p className="text-2xl font-bold text-primary">10 Coins</p>
                   </div>
                 </div>
-
+                
                 <div>
                   <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                     <Link className="h-5 w-5 text-primary" />
@@ -428,15 +199,15 @@ const ReferralSection = () => {
                     )}
                   </h3>
                   <div className="flex space-x-2">
-                    <Input
-                      value={referralLink}
-                      readOnly
+                    <Input 
+                      value={referralLink} 
+                      readOnly 
                       className="font-mono text-sm"
                       onClick={() => copyReferralLink()}
                     />
-                    <Button
-                      variant="outline"
-                      size="icon"
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
                       onClick={copyReferralLink}
                       title="Copy to clipboard"
                     >
@@ -464,7 +235,7 @@ const ReferralSection = () => {
                 </div>
               </div>
             </div>
-
+            
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">How it works</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -489,13 +260,13 @@ const ReferralSection = () => {
               </div>
             </div>
           </div>
-
+          
           <div className="glass-card rounded-xl overflow-hidden">
             <Tabs defaultValue="referrals">
               <TabsList className="w-full">
                 <TabsTrigger value="referrals" className="flex-1">Your Referrals</TabsTrigger>
               </TabsList>
-
+              
               <TabsContent value="referrals" className="p-6">
                 {referrals.length > 0 ? (
                   <div className="space-y-4">
@@ -508,10 +279,10 @@ const ReferralSection = () => {
                         </RouterLink>
                       </Button>
                     </div>
-
+                    
                     {referrals.slice(0, 3).map((referral) => (
-                      <div
-                        key={referral.id}
+                      <div 
+                        key={referral.id} 
                         className="flex items-center justify-between p-4 bg-secondary/20 rounded-lg hover:bg-secondary/30 transition-colors"
                       >
                         <div className="flex items-center">
@@ -532,7 +303,7 @@ const ReferralSection = () => {
                         </div>
                       </div>
                     ))}
-
+                    
                     {referrals.length > 3 && (
                       <div className="text-center mt-4">
                         <Button asChild variant="outline">
