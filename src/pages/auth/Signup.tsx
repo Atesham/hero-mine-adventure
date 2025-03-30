@@ -645,8 +645,7 @@ import Navbar from '@/components/layout/Navbar';
 import { motion } from 'framer-motion';
 import { db, auth } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from 'firebase/auth';
-import { generateRandomReferralCode } from '@/services/referralService';
-import { timeStamp } from 'console';
+import { generateReferralCode } from '@/services/referralService';
 
 // Enhanced validation schema
 const signupSchema = z.object({
@@ -813,7 +812,7 @@ const Signup = () => {
       );
 
       // Generate a unique referral code for this new user (await the promise)
-      const userReferralCode = await generateRandomReferralCode(data.username);
+      const userReferralCode = await generateReferralCode(data.username);
 
       // Prepare user data
       const userData = {
@@ -847,8 +846,6 @@ const Signup = () => {
           const referrerDoc = referrerSnapshot.docs[0];
           const referrerId = referrerDoc.id;
           const referrerData = referrerDoc.data();
-          const referrerName = referrerData.username || referrerData.email;
-
           // Create batch for atomic operations
           const batch = writeBatch(db);
 
@@ -858,50 +855,35 @@ const Signup = () => {
             referralCount: increment(1)
           });
 
-          // 2. Create transaction for REFERRER (50 coins)
-          const referrerTransactionRef = doc(collection(db, "transactions"));
-          batch.set(referrerTransactionRef, {
+          await addDoc(collection(db, 'transactions'), {
             userId: referrerId,
-            type: 'referral_bonus',
+            type: 'reward',
             amount: 50,
-            description: `Referral bonus for ${data.username}`,
+            description: `Referral bonus for inviting ${userCredential.user.displayName || data.username}`,
             timestamp: serverTimestamp(),
-            counterpartyId: userCredential.user.uid,
-            counterpartyName: data.username,
-            status: 'completed'
+            counterpartyName: userCredential.user.displayName || data.username, 
           });
 
-          // 3. Create transaction for NEW USER (25 coins)
-          const newUserTransactionRef = doc(collection(db, "transactions"));
-          batch.set(newUserTransactionRef, {
+          await addDoc(collection(db, 'transactions'), {
             userId: userCredential.user.uid,
-            type: 'signup_bonus',
+            type: 'reward',
             amount: 25,
-            description: `Signup bonus using ${referrerName}'s referral`,
-            timestamp: serverTimestamp(),
-            counterpartyId: referrerId,
-            counterpartyName: referrerName,
-            status: 'completed'
+            description: 'Welcome bonus for joining via referral',
+            timestamp: serverTimestamp()
           });
-
-          // 4. Record referral usage (changed collection name to "referrals")
-          batch.set(referralUsageRef, {
-            timeStamp: serverTimestamp(),
-            newUserEmail: data.email,
-            referralCode: data.referralCode,
-            rewardAmount: 50,
-            status: 'completed',
+          
+          await addDoc(collection(db, 'referrals'), {
             referrerId: referrerId,
-            referrerName: referrerName,
-            referredName: data.username
+            referredId: userCredential.user.uid,
+            referredName: referrerData.username || data.username, 
+            referrerName: referrerDoc.data().displayName,
+            timestamp: serverTimestamp(),
+            status: 'completed',
+            rewardAmount: 50
           });
-
+          
           // Execute all operations atomically
           await batch.commit();
-
-          toast.success('Referral bonus applied!', {
-            description: '50 coins added to referrer, 25 coins to you'
-          });
         }
       }
 

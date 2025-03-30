@@ -265,7 +265,7 @@ import {
 import { auth, db } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, increment, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
-import { generateRandomReferralCode } from '@/services/referralService';
+import { generateReferralCode } from '@/services/referralService';
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -306,7 +306,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!userSnap.exists()) {
             console.log("Creating new user document");
             // Create new user document with a referral code
-            const referralCode = generateRandomReferralCode(user.displayName || user.email?.split('@')[0] || '');
+            const referralCode = generateReferralCode(user.displayName || user.email?.split('@')[0] || '');
             
             await setDoc(userRef, {
               displayName: user.displayName || user.email?.split('@')[0],
@@ -322,7 +322,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else if (!userSnap.data().referralCode) {
             console.log("Adding referral code to existing user");
             // If user exists but doesn't have a referral code, add one
-            const referralCode = generateRandomReferralCode(user.displayName || user.email?.split('@')[0] || '');
+            const referralCode = generateReferralCode(user.displayName || user.email?.split('@')[0] || '');
             await updateDoc(userRef, {
               referralCode: referralCode,
               emailVerified: user.emailVerified
@@ -372,7 +372,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await updateProfile(userCredential.user, { displayName });
         setUser({ ...userCredential.user, displayName });
         
-        const userReferralCode = generateRandomReferralCode(displayName);
+        const userReferralCode = generateReferralCode(displayName);
         const userRef = doc(db, 'users', userCredential.user.uid);
         
         let initialCoins = 0;

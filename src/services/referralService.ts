@@ -90,7 +90,7 @@ export const getUserReferralCode = async (userId: string): Promise<string> => {
       // If user doesn't have a referral code yet, generate and save one
       if (!userData.referralCode) {
         console.log("No referral code found, generating one");
-        const newCode = generateRandomReferralCode(userData.displayName || '');
+        const newCode = generateReferralCode(userData.displayName || '');
         await updateDoc(userRef, { referralCode: newCode });
         console.log("Generated and saved new code:", newCode);
         return newCode;
@@ -111,40 +111,71 @@ export const getUserReferralCode = async (userId: string): Promise<string> => {
 
 // Generate a random referral code
 
-export const generateRandomReferralCode = async (displayName: string): Promise<string> => {
-  // Generate initials from display name (2-3 characters)
+// export const generateRandomReferralCode = async (displayName: string): Promise<string> => {
+//   // Generate initials from display name (2-3 characters)
+//   const initials = displayName
+//     .split(' ')
+//     .filter(name => name.length > 0)
+//     .slice(0, 3) // Take up to 3 names
+//     .map(name => name[0].toUpperCase())
+//     .join('')
+//     .padEnd(2, 'HC'); // Default to HC if not enough initials
+
+//   // Generate random alphanumeric string (6 characters)
+//   const randomChars = () => Math.random().toString(36).substring(2, 8).toUpperCase();
+
+//   let isUnique = false;
+//   let attempts = 0;
+//   const maxAttempts = 5;
+//   let code = '';
+
+//   while (!isUnique && attempts < maxAttempts) {
+//     attempts++;
+//     code = `${initials}${randomChars()}`.replace(/-/g, ''); // Remove any hyphens
+    
+//     // Check if code exists in Firestore
+//     const usersRef = collection(db, 'users');
+//     const q = query(usersRef, where('referralCode', '==', code));
+//     const querySnapshot = await getDocs(q);
+    
+//     isUnique = querySnapshot.empty;
+//   }
+
+//   // If still not unique after attempts, append timestamp
+//   if (!isUnique) {
+//     const timestamp = Date.now().toString(36).toUpperCase().slice(-4);
+//     code = `${initials}${randomChars().slice(0, 4)}${timestamp}`;
+//   }
+
+//   return code;
+// };
+
+
+
+export const generateReferralCode = (displayName: string): string => {
+  // 1. Clean and extract initials (2 chars exactly)
   const initials = displayName
-    .split(' ')
-    .filter(name => name.length > 0)
-    .slice(0, 3) // Take up to 3 names
-    .map(name => name[0].toUpperCase())
-    .join('')
-    .padEnd(2, 'HC'); // Default to HC if not enough initials
+    .replace(/[^a-zA-Z]/g, '') // Remove all non-alphabetic characters
+    .slice(0, 2)
+    .toUpperCase()
+    .padEnd(2, 'X'); // Default to 'XX' if name is too short
 
-  // Generate random alphanumeric string (6 characters)
-  const randomChars = () => Math.random().toString(36).substring(2, 8).toUpperCase();
+  // 2. Get current time in base36 (compact timestamp)
+  const timePart = Date.now().toString(36).toUpperCase().slice(-3); // Last 3 chars
 
-  let isUnique = false;
-  let attempts = 0;
-  const maxAttempts = 5;
-  let code = '';
+  // 3. Add 1 random character for variability
+  const randomChar = Math.floor(Math.random() * 36)
+    .toString(36)
+    .toUpperCase();
 
-  while (!isUnique && attempts < maxAttempts) {
-    attempts++;
-    code = `${initials}${randomChars()}`.replace(/-/g, ''); // Remove any hyphens
-    
-    // Check if code exists in Firestore
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('referralCode', '==', code));
-    const querySnapshot = await getDocs(q);
-    
-    isUnique = querySnapshot.empty;
-  }
+  // 4. Combine and format as 6-character code
+  const code = `${initials}${timePart}${randomChar}`
+    .replace(/[^A-Z0-9]/g, '') // Final sanitization
+    .slice(0, 6);
 
-  // If still not unique after attempts, append timestamp
-  if (!isUnique) {
-    const timestamp = Date.now().toString(36).toUpperCase().slice(-4);
-    code = `${initials}${randomChars().slice(0, 4)}${timestamp}`;
+  // 5. Fallback if somehow invalid (should never happen)
+  if (!/^[A-Z0-9]{6}$/.test(code)) {
+    return `XX${Math.random().toString(36).toUpperCase().slice(2, 6)}`;
   }
 
   return code;

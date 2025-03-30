@@ -121,7 +121,7 @@ const ReferralsPage = () => {
       ref.referredName,
       new Date(ref.timestamp).toLocaleDateString(),
       ref.status,
-      `${ref.rewardAmount || 25} coins`
+      `${ref.rewardAmount || 50} coins`
     ]);
     
     const csvContent = [
@@ -315,7 +315,7 @@ const ReferralsPage = () => {
                           </TableCell>
                           <TableCell>
                             <span className="font-semibold text-primary">
-                              +{referral.rewardAmount || 25} coins
+                              +{referral.rewardAmount || 50} coins
                             </span>
                           </TableCell>
                         </TableRow>

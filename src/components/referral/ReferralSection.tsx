@@ -106,7 +106,7 @@ const ReferralSection = () => {
       try {
         await navigator.share({
           title: 'Join Hero Coin',
-          text: 'Sign up for Hero Coin using my referral link and get 10 free coins!',
+          text: 'Sign up for Hero Coin using my referral link and get 25 free coins!',
           url: referralLink
         });
         toast.success('Referral link shared successfully!');
@@ -150,7 +150,7 @@ const ReferralSection = () => {
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Refer Friends & Earn Together</h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Invite your friends to join Hero Coin and both of you will earn bonus coins. You get 25 coins for each friend who joins!
+            Invite your friends to join Hero Coin and both of you will earn bonus coins. You get 50 coins for each friend who joins!
           </p>
         </div>
         
@@ -168,7 +168,7 @@ const ReferralSection = () => {
                       <Gift className="w-6 h-6 text-primary" />
                     </div>
                     <h3 className="font-semibold mb-1">Your Reward</h3>
-                    <p className="text-2xl font-bold text-primary">25 Coins</p>
+                    <p className="text-2xl font-bold text-primary">50 Coins</p>
                   </div>
                   
                   <div className="text-center p-4 rounded-lg bg-primary/5">
@@ -184,7 +184,7 @@ const ReferralSection = () => {
                       <Award className="w-6 h-6 text-primary" />
                     </div>
                     <h3 className="font-semibold mb-1">Friend's Reward</h3>
-                    <p className="text-2xl font-bold text-primary">10 Coins</p>
+                    <p className="text-2xl font-bold text-primary">25 Coins</p>
                   </div>
                 </div>
                 
@@ -298,7 +298,7 @@ const ReferralSection = () => {
                         </div>
                         <div className="text-right">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            +25 coins
+                            +50 coins
                           </span>
                         </div>
                       </div>
