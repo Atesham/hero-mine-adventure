@@ -25,32 +25,6 @@ import Cookies from "./components/layout/cookies";
 import About from "./components/layout/about";
 import MobileNavbar from "./components/layout/MobileNavbar"; // Import Mobile Navbar
 
-const ScrollManager = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    // Save scroll position before changing route
-    const saveScrollPosition = () => {
-      sessionStorage.setItem(`scrollPosition-${location.pathname}`, window.scrollY.toString());
-    };
-    window.addEventListener("beforeunload", saveScrollPosition);
-    return () => window.removeEventListener("beforeunload", saveScrollPosition);
-  }, [location.pathname]);
-
-
-  useEffect(() => {
-    // Restore scroll position after navigation
-    const savedScroll = sessionStorage.getItem(`scrollPosition-${location.pathname}`);
-    if (savedScroll) {
-      setTimeout(() => {
-        window.scrollTo(0, parseInt(savedScroll));
-      }, 100);
-    }
-  }, [location.pathname]);
-
-  return null;
-};
-
 // Create a Query Client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,7 +41,6 @@ function App() {
       <ThemeProvider attribute="class" defaultTheme="light">
         <AuthProvider>
           <Router>
-            <ScrollManager />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
