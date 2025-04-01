@@ -906,8 +906,8 @@ const Signup = () => {
       setCountdown(30);
       setVerificationCheckCount(0);
       
-      toast.success('Account created successfully!', {
-        description: 'Check your transactions for referral bonuses',
+      toast.success('Verification mail shared via email', {
+        description: 'Click on verification mail to verify your account',
         action: {
           label: 'Open Email',
           onClick: () => window.open('https://mail.google.com', '_blank')
