@@ -403,6 +403,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
+  fetchSignInMethodsForEmail,
   getAuth, 
   sendEmailVerification, 
   sendPasswordResetEmail, 
@@ -469,6 +470,11 @@ const Login = () => {
       } else if (error.code === 'auth/too-many-requests') {
         errorMessage = 'Account temporarily locked due to too many attempts. Please try again later.';
       }
+      else if (error.code === "auth/invalid-credential"){ 
+        errorMessage = 'Email ID is not registered yet. Please signup first.';
+      } else if (error.code === 'auth/operation-not-allowed') {
+        errorMessage = 'Email/password login is not enabled for this account.';
+      }
       
       toast.error('Login Error', {
         description: errorMessage
@@ -514,6 +520,38 @@ const Login = () => {
     }
   };
 
+  // const handleForgotPassword = async () => {
+  //   if (!email) {
+  //     toast.warning('Email Required', {
+  //       description: 'Please enter your email address'
+  //     });
+  //     return;
+  //   }
+
+  //   setForgotPasswordLoading(true);
+  //   try {
+  //     await sendPasswordResetEmail(auth, email);
+  //     toast.success('Password Reset Sent', {
+  //       description: `Instructions have been sent to ${email}`
+  //     });
+  //     setShowForgotPassword(false);
+  //   } catch (error: any) {
+  //     let errorMessage = 'Failed to send reset email';
+  //     if (error.code === 'auth/user-not-found') {
+  //       errorMessage = 'No account found with this email';
+  //     } else if (error.code === 'auth/invalid-email') {
+  //       errorMessage = 'Please enter a valid email address';
+  //     }
+      
+  //     toast.error('Password Reset Error', {
+  //       description: errorMessage
+  //     });
+  //   } finally {
+  //     setForgotPasswordLoading(false);
+  //   }
+  // };
+
+
   const handleForgotPassword = async () => {
     if (!email) {
       toast.warning('Email Required', {
@@ -521,19 +559,32 @@ const Login = () => {
       });
       return;
     }
-
+  
     setForgotPasswordLoading(true);
     try {
+      // Check if email exists before sending reset email
+      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+      
+      if (signInMethods.length === 0) {
+        toast.warning('Email Not Registered', {
+          description: 'No account found with this email. Please check or sign up.'
+        });
+        setForgotPasswordLoading(false);
+        return;
+      }
+  
+      // Send password reset email if the email is registered
       await sendPasswordResetEmail(auth, email);
+      console.log('Email registered:', signInMethods);
+
       toast.success('Password Reset Sent', {
         description: `Instructions have been sent to ${email}`
       });
       setShowForgotPassword(false);
+  
     } catch (error: any) {
       let errorMessage = 'Failed to send reset email';
-      if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No account found with this email';
-      } else if (error.code === 'auth/invalid-email') {
+      if (error.code === 'auth/invalid-email') {
         errorMessage = 'Please enter a valid email address';
       }
       
@@ -544,7 +595,7 @@ const Login = () => {
       setForgotPasswordLoading(false);
     }
   };
-
+  
   if (needsVerification) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
