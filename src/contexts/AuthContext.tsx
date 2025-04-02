@@ -458,38 +458,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // const login = async (email: string, password: string) => {
-  //   try {
-  //     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
-  //     if (userCredential.user && !userCredential.user.emailVerified) {
-  //       toast.warning('Email not verified', {
-  //         description: 'Please verify your email address before logging in.',
-  //         action: {
-  //           label: 'Resend',
-  //           onClick: () => sendEmailVerification()
-  //         }
-  //       });
-  //       await signOut(auth);
-  //       throw new Error('Email not verified');
-  //     }
-      
-  //     toast.success('Logged in successfully!');
-  //   } catch (error: any) {
-  //     console.error('Login error:', error);
-      
-  //     if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-  //       throw new Error('Invalid email or password. Please try again.');
-  //     } else if (error.code === 'auth/too-many-requests') {
-  //       throw new Error('Too many failed login attempts. Please try again later.');
-  //     } else if (error.message === 'Email not verified') {
-  //       throw new Error('Please verify your email before logging in. Check your inbox for the verification email.');
-  //     } else {
-  //       throw new Error(error.message || 'Failed to log in');
-  //     }
-  //   }
-  // };
-
   const loginWithGoogle = async () => {
     try {
       const provider = new GoogleAuthProvider();

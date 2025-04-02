@@ -126,13 +126,20 @@
   transform: translateY(10px);
 }
 
-/* Ensure adsbygoogle container has proper layout */
-ins.adsbygoogle {
-  display: block !important;
-  margin: 0 auto;
-  text-align: center;
+/* For mobile devices */
+@media (max-width: 768px) {
+  /* Prevent body scrolling when keyboard is open */
+  body.keyboard-open {
+    position: fixed;
+    width: 100%;
+    overflow: hidden;
+  }
+  
+  /* Adjust input container when keyboard is open */
+  .keyboard-open .input-container {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
-
 .page-enter-active {
   opacity: 1;
   transform: translateY(0);

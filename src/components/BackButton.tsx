@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react"; // Back Icon
 import { useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-const BackButton = () => {
+export const BackButton = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -48,3 +48,5 @@ const BackButton = () => {
 
   );
 };
+
+export default BackButton;

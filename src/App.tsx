@@ -16,6 +16,7 @@ import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 import Referrals from "./pages/Referrals";
 import TransactionsPage from './pages/TransactionsPage'; 
+import Chat from "./pages/chat"; // Import Chat Page
 import Profile from "./pages/Profile"; // We'll create this file
 import Careers from "./components/layout/careers";
 import Contact from "./components/layout/contact";
@@ -48,6 +49,8 @@ function App() {
               <Route path="/mining" element={<Mining />} />
               <Route path="/wallet" element={<Wallet />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/chat" element={<Chat />} /> {/* Add new Chat route */}
+
               <Route path="/referrals" element={<Referrals />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/careers" element={<Careers />} />

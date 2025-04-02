@@ -48,6 +48,8 @@
     "cors": "^2.8.5",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
+    "emoji-picker": "^0.0.7",
+    "emoji-picker-react": "^4.12.2",
     "express": "^4.21.2",
     "firebase": "^10.8.0",
     "firebase-admin": "^13.2.0",
