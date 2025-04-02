@@ -2,9 +2,9 @@
 // import Navbar from '@/components/layout/Navbar';
 // import Footer from '@/components/layout/Footer';
 // import Container from '@/components/ui/Container';
-// import { Wallet as WalletIcon, History, ArrowDownUp, QrCode, Info, Loader2, RefreshCw, MoreVertical } from 'lucide-react';
+// import { Wallet as WalletIcon, History, ArrowDownUp, QrCode, Info, Loader2, RefreshCw, MoreVertical, ArrowRight } from 'lucide-react';
 // import { useAuth } from '@/contexts/AuthContext';
-// import { Navigate } from 'react-router-dom';
+// import { Link, Navigate } from 'react-router-dom';
 // import { Button } from '@/components/ui/button';
 // import QRCodeComponent from '@/components/shared/QRCode';
 // import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
@@ -12,12 +12,6 @@
 // import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 // import { getUserWalletData, Transaction } from '@/services/transactionService';
 // import SendCoinsDialog from '@/components/wallet/SendCoinsDialog';
-// import {
-//   DropdownMenu,
-//   DropdownMenuContent,
-//   DropdownMenuItem,
-//   DropdownMenuTrigger,
-// } from "@/components/ui/dropdown-menu";
 
 // const Wallet = () => {
 //   const { user } = useAuth();
@@ -276,14 +270,20 @@
 //                       ))}
 
 //                       {transactions.length > 5 && (
-//                         <div className="text-center mt-4">
-//                           <a
-//                             href="/transactions"
-//                             className="text-primary hover:underline text-sm font-medium"
-//                           >
-//                             View All Transactions →
-//                           </a>
-//                         </div>
+//                         // <div className="text-center mt-4">
+//                         //   <a
+//                         //     href="/transactions"
+//                         //     className="text-primary hover:underline text-sm font-medium"
+//                         //   >
+//                         //     View All Transactions →
+//                         //   </a>
+//                         // </div>
+//                         <Button asChild variant="outline" className="mt-4">
+//   <Link to="/transactions">
+//     View All Transactions
+//     <ArrowRight className="ml-2 h-4 w-4" />
+//   </Link>
+// </Button>
 //                       )}
 //                     </>
 //                   ) : (
@@ -313,9 +313,18 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Container from '@/components/ui/Container';
-import { Wallet as WalletIcon, History, ArrowDownUp, QrCode, Info, Loader2, RefreshCw, MoreVertical } from 'lucide-react';
+import { 
+  Wallet as WalletIcon, 
+  History, 
+  ArrowDownUp, 
+  QrCode, 
+  Info, 
+  Loader2, 
+  RefreshCw, 
+  ArrowRight 
+} from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import QRCodeComponent from '@/components/shared/QRCode';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
@@ -324,12 +333,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getUserWalletData, Transaction } from '@/services/transactionService';
 import SendCoinsDialog from '@/components/wallet/SendCoinsDialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 const Wallet = () => {
   const { user } = useAuth();
@@ -541,7 +544,15 @@ const Wallet = () => {
                   <p className="text-3xl font-bold">{transactions.length}</p>
                 </div>
               </div>
-
+              <div className="glass-card rounded-xl p-6 text-center">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <QrCode className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold mb-4">Send Hero Coins</h3>
+                <div className="w-full flex justify-center">
+                  <SendCoinsDialog userId={user.uid} balance={balance} onSuccess={fetchWalletData} />
+                </div>
+              </div>
               <div className="glass-card rounded-xl p-6 mb-8">
                 <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                   <h3 className="text-xl font-bold">Your Wallet</h3>
@@ -626,14 +637,12 @@ const Wallet = () => {
                       ))}
 
                       {transactions.length > 5 && (
-                        <div className="text-center mt-4">
-                          <a
-                            href="/transactions"
-                            className="text-primary hover:underline text-sm font-medium"
-                          >
-                            View All Transactions →
-                          </a>
-                        </div>
+                        <Button asChild variant="outline" className="mt-4">
+                          <Link to="/transactions">
+                            View All Transactions
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Link>
+                        </Button>
                       )}
                     </>
                   ) : (
@@ -644,6 +653,8 @@ const Wallet = () => {
                   )}
                 </div>
               </div>
+
+              
             </>
           )}
         </Container>

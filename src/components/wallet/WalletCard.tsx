@@ -24,16 +24,12 @@ const WalletCard = () => {
   useEffect(() => {
     // Generate a random wallet address
     const generateWalletAddress = () => {
-      const timestampPart = Date.now().toString(36).slice(-6); // 6 chars
-  
-  const randomPart = window.crypto.getRandomValues(new Uint8Array(10))
-    .reduce((acc, byte) => acc + (byte % 36).toString(36), ''); // 10 chars
-  
-  return (timestampPart + randomPart)
-    .replace(/[^a-z0-9]/g, '') // Sanitize
-    .slice(0, 16) // Exactly 16 chars
-    .padEnd(16, '0'); // Pad if needed (shouldn't occur)
-
+      const chars = '0123456789abcdef';
+      let result = '0x';
+      for (let i = 0; i < 40; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
     };
     
     // Get stored wallet data or create new one

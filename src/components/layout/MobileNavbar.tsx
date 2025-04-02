@@ -1,17 +1,42 @@
-// import React from 'react';
+// import React, { useState, useEffect } from 'react';
 // import { Link, useLocation } from 'react-router-dom';
 // import { cn } from '@/lib/utils';
 // import { Home, Pickaxe, Wallet, MessageSquare, UserPlus } from 'lucide-react';
 // import { useIsMobile } from '@/hooks/use-mobile';
-// import { motion } from 'framer-motion';
+// import { motion, useAnimation, AnimatePresence } from 'framer-motion';
 
 // const MobileNavbar = () => {
 //   const location = useLocation();
 //   const isMobile = useIsMobile();
-  
-//   if (!isMobile) return null;
+//   const [lastScrollY, setLastScrollY] = useState(0);
+//   const [hidden, setHidden] = useState(false);
+//   const controls = useAnimation();
 
 //   const isActive = (path: string) => location.pathname === path;
+
+//   useEffect(() => {
+//     if (!isMobile || location.pathname === '/chat') return;
+
+//     const handleScroll = () => {
+//       const currentScrollY = window.scrollY;
+//       const scrollingDown = currentScrollY > lastScrollY;
+      
+//       if (Math.abs(currentScrollY - lastScrollY) > 10) {
+//         if (scrollingDown && currentScrollY > 30 && !hidden) {
+//           setHidden(true);
+//           controls.start("hidden");
+//         } else if (!scrollingDown && hidden) {
+//           setHidden(false);
+//           controls.start("visible");
+//         }
+//       }
+      
+//       setLastScrollY(currentScrollY);
+//     };
+
+//     window.addEventListener('scroll', handleScroll, { passive: true });
+//     return () => window.removeEventListener('scroll', handleScroll);
+//   }, [hidden, lastScrollY, controls, isMobile, location.pathname]);
 
 //   const navLinks = [
 //     { name: 'Home', path: '/', icon: Home },
@@ -21,70 +46,109 @@
 //     { name: 'Refer', path: '/referrals', icon: UserPlus },
 //   ];
 
+//   const variants = {
+//     visible: { y: 0 },
+//     hidden: { y: '100%' }
+//   };
+
+//   if (!isMobile || location.pathname === '/chat') return null;
+
 //   return (
-//     <motion.nav 
-//       initial={{ y: 100 }}
-//       animate={{ y: 0 }}
-//       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-//       className="md:hidden fixed bottom-0 left-4 right-4 z-50"
-//     >
-//       <div className="bg-background/90 backdrop-blur-lg border rounded-xl shadow-lg p-1">
-//         <div className="flex justify-around items-center">
-//           {navLinks.map((link) => {
-//             const Icon = link.icon;
-//             return (
-//               <Link
-//                 key={link.path}
-//                 to={link.path}
-//                 className={cn(
-//                   'relative flex flex-col items-center py-2 px-1 text-xs transition-all duration-200',
-//                   isActive(link.path) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-//                 )}
-//               >
-//                 {isActive(link.path) && (
-//                   <motion.span
-//                     layoutId="mobile-nav-indicator"
-//                     className="absolute -top-1 h-1 w-6 rounded-full bg-primary"
-//                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-//                   />
-//                 )}
-//                 <div className={cn(
-//                   'p-2 rounded-lg transition-colors',
-//                   isActive(link.path) ? 'bg-primary/10' : 'hover:bg-muted/50'
-//                 )}>
-//                   <Icon className={cn(
-//                     "h-5 w-5 transition-all",
-//                     isActive(link.path) ? "stroke-[2.5px]" : "stroke-[2px]"
-//                   )} />
-//                 </div>
-//                 <span className="mt-1 font-medium">{link.name}</span>
-//               </Link>
-//             );
-//           })}
+//     <AnimatePresence>
+//       <motion.nav
+//         initial="visible"
+//         animate={controls}
+//         variants={variants}
+//         transition={{ 
+//           type: 'spring', 
+//           stiffness: 500,
+//           damping: 30,
+//           mass: 0.5
+//         }}
+//         className="md:hidden fixed bottom-0 left-0 right-0 z-50 px-2"
+//       >
+//         <div className="bg-background/95 backdrop-blur-lg border-t rounded-t-2xl shadow-lg">
+//           <div className="flex justify-around items-center py-1.5">
+//             {navLinks.map((link) => {
+//               const Icon = link.icon;
+//               return (
+//                 <Link
+//                   key={link.path}
+//                   to={link.path}
+//                   className={cn(
+//                     'relative flex flex-col items-center w-full p-1 text-xs transition-all',
+//                     isActive(link.path) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+//                   )}
+//                 >
+//                   {isActive(link.path) && (
+//                     <motion.span
+//                       layoutId="mobile-nav-indicator"
+//                       className="absolute -top-1 h-1 w-5 rounded-full bg-primary"
+//                       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+//                     />
+//                   )}
+//                   <div className={cn(
+//                     'p-1.5 rounded-lg transition-colors',
+//                     isActive(link.path) ? 'bg-primary/10' : 'hover:bg-muted/50'
+//                   )}>
+//                     <Icon className={cn(
+//                       "h-[1.2rem] w-[1.2rem] transition-all",
+//                       isActive(link.path) ? "stroke-[2.5px]" : "stroke-[2px]"
+//                     )} />
+//                   </div>
+//                   <span className="mt-0.5 text-[0.7rem] font-medium">{link.name}</span>
+//                 </Link>
+//               );
+//             })}
+//           </div>
 //         </div>
-//       </div>
-//     </motion.nav>
+//       </motion.nav>
+//     </AnimatePresence>
 //   );
 // };
 
 // export default MobileNavbar;
 
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Home, Pickaxe, Wallet, MessageSquare, UserPlus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { motion } from 'framer-motion';
+import { motion, useAnimation, AnimatePresence } from 'framer-motion';
 
 const MobileNavbar = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
-  
-  // Don't show navbar if not mobile or if on chat page
-  if (!isMobile || location.pathname === '/chat') return null;
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [hidden, setHidden] = useState(false);
+  const controls = useAnimation();
 
   const isActive = (path: string) => location.pathname === path;
+
+  useEffect(() => {
+    if (!isMobile || location.pathname === '/chat') return;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const scrollingDown = currentScrollY > lastScrollY;
+      
+      if (Math.abs(currentScrollY - lastScrollY) > 10) {
+        if (scrollingDown && currentScrollY > 30 && !hidden) {
+          setHidden(true);
+          controls.start("hidden");
+        } else if (!scrollingDown && hidden) {
+          setHidden(false);
+          controls.start("visible");
+        }
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [hidden, lastScrollY, controls, isMobile, location.pathname]);
 
   const navLinks = [
     { name: 'Home', path: '/', icon: Home },
@@ -94,49 +158,64 @@ const MobileNavbar = () => {
     { name: 'Refer', path: '/referrals', icon: UserPlus },
   ];
 
+  const variants = {
+    visible: { y: 0 },
+    hidden: { y: '100%' }
+  };
+
+  if (!isMobile || location.pathname === '/chat') return null;
+
   return (
-    <motion.nav 
-      initial={{ y: 100 }}
-      animate={{ y: 0 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="md:hidden fixed bottom-0 left-4 right-4 z-50"
-    >
-      <div className="bg-background/90 backdrop-blur-lg border rounded-xl shadow-lg p-1">
-        <div className="flex justify-around items-center">
-          {navLinks.map((link) => {
-            const Icon = link.icon;
-            return (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={cn(
-                  'relative flex flex-col items-center py-2 px-1 text-xs transition-all duration-200',
-                  isActive(link.path) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {isActive(link.path) && (
-                  <motion.span
-                    layoutId="mobile-nav-indicator"
-                    className="absolute -top-1 h-1 w-6 rounded-full bg-primary"
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  />
-                )}
-                <div className={cn(
-                  'p-2 rounded-lg transition-colors',
-                  isActive(link.path) ? 'bg-primary/10' : 'hover:bg-muted/50'
-                )}>
-                  <Icon className={cn(
-                    "h-5 w-5 transition-all",
-                    isActive(link.path) ? "stroke-[2.5px]" : "stroke-[2px]"
-                  )} />
-                </div>
-                <span className="mt-1 font-medium">{link.name}</span>
-              </Link>
-            );
-          })}
+    <AnimatePresence>
+      <motion.nav
+        initial="visible"
+        animate={controls}
+        variants={variants}
+        transition={{ 
+          type: 'spring', 
+          stiffness: 500,
+          damping: 30,
+          mass: 0.5
+        }}
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50"
+      >
+        <div className="bg-background/95 backdrop-blur-lg border-t shadow-lg rounded-tl-2xl rounded-tr-2xl">
+          <div className="flex justify-around items-center py-1.5">
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={cn(
+                    'relative flex flex-col items-center w-full p-1 text-xs transition-all',
+                    isActive(link.path) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  {isActive(link.path) && (
+                    <motion.span
+                      layoutId="mobile-nav-indicator"
+                      className="absolute -top-1 h-1 w-5 rounded-full bg-primary"
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    />
+                  )}
+                  <div className={cn(
+                    'p-1.5 rounded-lg transition-colors',
+                    isActive(link.path) ? 'bg-primary/10' : 'hover:bg-muted/50'
+                  )}>
+                    <Icon className={cn(
+                      "h-[1.2rem] w-[1.2rem] transition-all",
+                      isActive(link.path) ? "stroke-[2.5px]" : "stroke-[2px]"
+                    )} />
+                  </div>
+                  <span className="mt-0.5 text-[0.7rem] font-medium">{link.name}</span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
-      </div>
-    </motion.nav>
+      </motion.nav>
+    </AnimatePresence>
   );
 };
 
