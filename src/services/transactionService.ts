@@ -72,11 +72,122 @@ export const getUserWalletData = async (userId: string) => {
 };
 
 // Send coins to another user
+// export const sendCoins = async (
+//   senderUserId: string, 
+//   receiverAddress: string, 
+//   amount: number, 
+//   description: string = 'Sent Hero Coins'
+// ) => {
+//   try {
+//     if (amount <= 0) {
+//       throw new Error('Amount must be greater than zero');
+//     }
+    
+//     // Check if sender has enough balance
+//     const senderRef = doc(db, 'users', senderUserId);
+//     const senderDoc = await getDoc(senderRef);
+    
+//     if (!senderDoc.exists()) {
+//       throw new Error('Sender account not found');
+//     }
+    
+//     const senderBalance = senderDoc.data().coins || 0;
+    
+//     if (senderBalance < amount) {
+//       throw new Error('Insufficient balance');
+//     }
+    
+//     // Find receiver by address
+//     const receiverId = receiverAddress.startsWith('HC-') 
+//       ? receiverAddress.substring(3, 15).toLowerCase() 
+//       : receiverAddress;
+    
+//     // Find matching user
+//     const usersQuery = query(
+//       collection(db, 'users'),
+//       where('uid', '==', receiverId)
+//     );
+    
+//     const usersSnapshot = await getDocs(usersQuery);
+//     let receiverDoc;
+//     let receiverData;
+    
+//     if (usersSnapshot.empty) {
+//       // Try finding by substring of UID
+//       const allUsersQuery = query(collection(db, 'users'));
+//       const allUsersSnapshot = await getDocs(allUsersQuery);
+      
+//       allUsersSnapshot.forEach((doc) => {
+//         const uid = doc.id;
+//         if (uid.toLowerCase().includes(receiverId.toLowerCase())) {
+//           receiverDoc = doc;
+//           receiverData = doc.data();
+//         }
+//       });
+      
+//       if (!receiverDoc) {
+//         throw new Error('Receiver not found with the provided address');
+//       }
+//     } else {
+//       receiverDoc = usersSnapshot.docs[0];
+//       receiverData = receiverDoc.data();
+//     }
+    
+//     const receiverRef = doc(db, 'users', receiverDoc.id);
+    
+//     // Check if sender is trying to send to themselves
+//     if (senderUserId === receiverDoc.id) {
+//       throw new Error('Cannot send coins to yourself');
+//     }
+    
+//     // Update sender's balance
+//     await updateDoc(senderRef, {
+//       coins: senderBalance - amount
+//     });
+    
+//     // Update receiver's balance
+//     await updateDoc(receiverRef, {
+//       coins: (receiverData.coins || 0) + amount
+//     });
+    
+//     // Create sent transaction for sender
+//     await addDoc(collection(db, 'transactions'), {
+//       userId: senderUserId,
+//       counterpartyId: receiverDoc.id,
+//       counterpartyName: receiverData.displayName || 'Unknown User',
+//       counterpartyAddress: `HC-${receiverDoc.id.substring(0, 12).toUpperCase()}`,
+//       type: 'sent',
+//       amount: amount,
+//       description: description,
+//       timestamp: serverTimestamp()
+//     });
+    
+//     // Create received transaction for receiver
+//     await addDoc(collection(db, 'transactions'), {
+//       userId: receiverDoc.id,
+//       counterpartyId: senderUserId,
+//       counterpartyName: senderDoc.data().displayName || 'Unknown User',
+//       counterpartyAddress: `HC-${senderUserId.substring(0, 12).toUpperCase()}`,
+//       type: 'received',
+//       amount: amount,
+//       description: 'Received Hero Coins',
+//       timestamp: serverTimestamp()
+//     });
+    
+//     toast.success('Coins sent successfully!');
+//     return true;
+//   } catch (error) {
+//     console.error('Error sending coins:', error);
+//     throw error;
+//   }
+// };
+
+
 export const sendCoins = async (
   senderUserId: string, 
   receiverAddress: string, 
   amount: number, 
-  description: string = 'Sent Hero Coins'
+  description: string = ''
 ) => {
   try {
     if (amount <= 0) {
@@ -92,6 +203,7 @@ export const sendCoins = async (
     }
     
     const senderBalance = senderDoc.data().coins || 0;
+    const senderName = senderDoc.data().displayName || 'Unknown User';
     
     if (senderBalance < amount) {
       throw new Error('Insufficient balance');
@@ -134,6 +246,7 @@ export const sendCoins = async (
     }
     
     const receiverRef = doc(db, 'users', receiverDoc.id);
+    const receiverName = receiverData.displayName || 'Unknown User';
     
     // Check if sender is trying to send to themselves
     if (senderUserId === receiverDoc.id) {
@@ -150,15 +263,24 @@ export const sendCoins = async (
       coins: (receiverData.coins || 0) + amount
     });
     
+    // Format descriptions like PayTM
+    const senderDescription = description 
+      ? description 
+      : `Sent to ${receiverName}`;
+    
+    const receiverDescription = description 
+      ? description 
+      : `Received from ${senderName}`;
+    
     // Create sent transaction for sender
     await addDoc(collection(db, 'transactions'), {
       userId: senderUserId,
       counterpartyId: receiverDoc.id,
-      counterpartyName: receiverData.displayName || 'Unknown User',
+      counterpartyName: receiverName,
       counterpartyAddress: `HC-${receiverDoc.id.substring(0, 12).toUpperCase()}`,
       type: 'sent',
       amount: amount,
-      description: description,
+      description: senderDescription,
       timestamp: serverTimestamp()
     });
     
@@ -166,11 +288,11 @@ export const sendCoins = async (
     await addDoc(collection(db, 'transactions'), {
       userId: receiverDoc.id,
       counterpartyId: senderUserId,
-      counterpartyName: senderDoc.data().displayName || 'Unknown User',
+      counterpartyName: senderName,
       counterpartyAddress: `HC-${senderUserId.substring(0, 12).toUpperCase()}`,
       type: 'received',
       amount: amount,
-      description: 'Received Hero Coins',
+      description: receiverDescription,
       timestamp: serverTimestamp()
     });
     
@@ -178,11 +300,11 @@ export const sendCoins = async (
     return true;
   } catch (error) {
     console.error('Error sending coins:', error);
+    toast.error(error.message || 'Failed to send coins');
     throw error;
   }
 };
 
-// Get top miners for leaderboard
 export const getTopMiners = async (maxLimit = 20) => {
   try {
     const usersQuery = query(
