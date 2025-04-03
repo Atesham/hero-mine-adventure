@@ -34,11 +34,9 @@ const ReferralSection = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching referral data for user:', user.uid);
       
       // Get user's referral code
       const code = await getUserReferralCode(user.uid);
-      console.log('Retrieved referral code:', code);
       
       if (!code) {
         console.error("No referral code returned");
@@ -60,7 +58,6 @@ const ReferralSection = () => {
       
       // Generate referral link
       const link = generateReferralLink(code);
-      console.log('Generated referral link:', link);
       setReferralLink(link);
     } catch (error: any) {
       console.error('Error fetching referral data:', error);
