@@ -1,7 +1,9 @@
 
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
+import { Theme as EmojiTheme } from 'emoji-picker-react';
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import {
     collection, addDoc, query, orderBy, onSnapshot,
@@ -10,15 +12,16 @@ import {
 } from "firebase/firestore";
 import { auth, db } from '../lib/firebase';
 import {
-    Send, SmilePlus, ChevronDown, Flag,
-    ArrowLeft, X, Moon, Sun, Reply, MoreVertical
+    Send, SmilePlus, ChevronDown,
+    ArrowLeft, X, Moon, Sun, Reply
 } from "lucide-react";
 import { toast } from "sonner";
 import { onAuthStateChanged, User } from "firebase/auth";
+import EmojiPicker from "emoji-picker-react";
+import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type Message = {
     id: string;
@@ -27,17 +30,17 @@ type Message = {
     displayName: string;
     photoURL: string | null;
     createdAt: Timestamp;
+    reactions?: Record<string, string[]>;
     replyTo?: string;
     replyToMessage?: Message;
 };
 
 type OnlineUser = {
+    email: any;
     uid: string;
     displayName: string;
     photoURL: string | null;
-    email?: string;
     lastSeen: Timestamp;
-    status: string;
 };
 
 const MAX_MESSAGE_PREVIEW_LENGTH = 100;
@@ -95,8 +98,7 @@ const Chat = () => {
                 status: "online",
                 lastSeen: serverTimestamp(),
                 displayName: user.displayName || "Anonymous",
-                photoURL: user.photoURL,
-                email: user.email || null
+                photoURL: user.photoURL
             }, { merge: true });
         });
 
@@ -113,11 +115,9 @@ const Chat = () => {
             const users: OnlineUser[] = [];
             
             snapshot.forEach((doc) => {
-                // Skip current user
                 if (doc.id === currentUser.uid) return;
                 
                 const data = doc.data();
-                // Consider user online if status is "online" and lastSeen is within last 30 seconds
                 if (data.status === "online" && data.lastSeen) {
                     const lastSeen = data.lastSeen as Timestamp;
                     if (now.seconds - lastSeen.seconds < 30) {
@@ -125,9 +125,8 @@ const Chat = () => {
                             uid: doc.id,
                             displayName: data.displayName || 'Anonymous',
                             photoURL: data.photoURL || null,
-                            email: data.email,
-                            lastSeen: lastSeen,
-                            status: data.status
+                            email: data.email || undefined,
+                            lastSeen: lastSeen
                         });
                     }
                 }
@@ -137,48 +136,6 @@ const Chat = () => {
         });
 
         return () => unsubscribeStatus();
-    }, [currentUser]);
-
-    // Update user's own status
-    useEffect(() => {
-        if (!currentUser) return;
-
-        const userStatusRef = doc(db, "status", currentUser.uid);
-        
-        // Initial status update
-        setDoc(userStatusRef, {
-            status: "online",
-            lastSeen: serverTimestamp(),
-            displayName: currentUser.displayName || 'Anonymous',
-            photoURL: currentUser.photoURL || null,
-            email: currentUser.email || null
-        }, { merge: true });
-
-        // Heartbeat interval
-        const heartbeatInterval = setInterval(() => {
-            updateDoc(userStatusRef, {
-                lastSeen: serverTimestamp()
-            });
-        }, 15000);
-
-        // Handle visibility changes
-        const handleVisibilityChange = () => {
-            updateDoc(userStatusRef, {
-                status: document.visibilityState === 'visible' ? "online" : "away",
-                lastSeen: serverTimestamp()
-            });
-        };
-
-        window.addEventListener('visibilitychange', handleVisibilityChange);
-
-        return () => {
-            clearInterval(heartbeatInterval);
-            window.removeEventListener('visibilitychange', handleVisibilityChange);
-            updateDoc(userStatusRef, {
-                status: "offline",
-                lastSeen: serverTimestamp()
-            });
-        };
     }, [currentUser]);
 
     // Messages handling
@@ -211,7 +168,7 @@ const Chat = () => {
         return () => unsubscribeMessages();
     }, [currentUser]);
 
-    const filteredOnlineUsers = onlineUsers.filter(user =>
+        const filteredOnlineUsers = onlineUsers.filter(user =>
         user.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -267,10 +224,6 @@ const Chat = () => {
     const formatTime = (timestamp: Timestamp) => {
         if (!timestamp) return "";
         return timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    };
-
-    const reportMessage = (messageId: string) => {
-        toast.info("Message reported to moderators");
     };
 
     // Render functions
@@ -333,53 +286,6 @@ const Chat = () => {
                 >
                     <X className="h-4 w-4" />
                 </button>
-            </div>
-        );
-    };
-
-    const renderMessageActions = (msg: Message) => {
-        const isCurrentUser = msg.uid === currentUser?.uid;
-        
-        return (
-            <div className={`absolute flex items-center gap-1 ${isCurrentUser ? '-left-2' : '-right-2'} -top-2 
-                bg-white dark:bg-gray-800 rounded-full shadow-md p-1 border ${borderColor} transition-all duration-200
-                opacity-0 group-hover:opacity-100 group-hover:scale-100`}
-                onClick={(e) => e.stopPropagation()}
-            >
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-7 w-7 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-                    onClick={() => {
-                        setReplyingTo(msg);
-                        setMessage(`@${msg.displayName} `);
-                        setTimeout(() => {
-                            const input = document.querySelector('input[type="text"]') as HTMLInputElement;
-                            input?.focus();
-                        }, 100);
-                    }}
-                >
-                  
-                    <Reply className="h-4 w-4" />
-                </Button>
-                
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-7 w-7 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-                        >
-                            <MoreVertical className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40">
-                        <DropdownMenuItem onClick={() => reportMessage(msg.id)}>
-                            <Flag className="mr-2 h-4 w-4" />
-                            <span>Report</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
             </div>
         );
     };
@@ -582,7 +488,22 @@ const Chat = () => {
                                         {renderMessageText(msg)}
                                     </div>
                                     
-                                    {renderMessageActions(msg)}
+                                    <button 
+                                        onClick={() => {
+                                            setReplyingTo(msg);
+                                            setMessage(`@${msg.displayName} `);
+                                            setTimeout(() => {
+                                                const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+                                                input?.focus();
+                                            }, 100);
+                                        }}
+                                        className={`absolute -top-2 ${msg.uid === currentUser.uid ? '-left-2' : '-right-2'} 
+                                            opacity-0 group-hover:opacity-100 transition-opacity bg-gray-200 dark:bg-gray-700 
+                                            rounded-full p-1 hover:bg-gray-300 dark:hover:bg-gray-600`}
+                                        title="Reply to this message"
+                                    >
+                                        <Reply className="h-4 w-4" />
+                                    </button>
                                 </div>
 
                                 <div className={`flex items-center ${msg.uid === currentUser.uid ? 'justify-end' : 'justify-start'}`}>
@@ -612,18 +533,25 @@ const Chat = () => {
                 {renderReplyPreview()}
 
                 <form onSubmit={sendMessage} className="flex items-center gap-2">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="rounded-full"
-                        onClick={() => {
-                            const input = document.querySelector('input[type="text"]') as HTMLInputElement;
-                            input?.focus();
-                        }}
-                    >
-                        <SmilePlus className="h-5 w-5" />
-                    </Button>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button type="button" variant="ghost" size="icon" className="rounded-full">
+                                <SmilePlus className="h-5 w-5" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 border-0 shadow-lg">
+                            <EmojiPicker
+                                onEmojiClick={(emojiData) => {
+                                    setMessage(prev => prev + emojiData.emoji);
+                                    const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+                                    input?.focus();
+                                }}
+                                height={350}
+                                width={300}
+                                theme={theme === 'dark' ? EmojiTheme.DARK : EmojiTheme.LIGHT}
+                            />
+                        </PopoverContent>
+                    </Popover>
 
                     <Input
                         type="text"
@@ -656,3 +584,5 @@ const Chat = () => {
 };
 
 export default Chat;
+
+
