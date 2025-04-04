@@ -5,7 +5,8 @@ import { db } from "@/lib/firebase";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card"; 
 import { Button } from "@/components/ui/button"; 
 import { Skeleton } from '@/components/ui/skeleton';
-import { Clock } from "lucide-react";
+import { Clock, FileText } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface Project {
   id: string;
@@ -23,8 +24,6 @@ interface ProjectListProps {
 }
 
 const ProjectList: React.FC<ProjectListProps> = ({ activeFilter }) => {
-  // const router = useRouter(); // ✅ Initialize useRouter here
-
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -130,10 +129,12 @@ const ProjectList: React.FC<ProjectListProps> = ({ activeFilter }) => {
                     <span className="font-medium text-green-600">{project.estimatedEarnings}</span>
                   )}
                 </div> 
-                <Button variant="outline" size="sm" onClick={() => console.log(`View project ${project.id}`)}>
-                  View Guide
-                </Button>
-
+                <Link to={`/guide/${project.id}`}>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    View Guide
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>

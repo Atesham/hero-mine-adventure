@@ -26,6 +26,8 @@ import Cookies from "./components/layout/cookies";
 import About from "./components/layout/about";
 import MobileNavbar from "./components/layout/MobileNavbar"; // Import Mobile Navbar
 import EarnMore from "./pages/EarnMore"; // Import Earn More component
+import Guide from "./pages/Guide"; // Import Guide component
+
 // Create a Query Client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +62,7 @@ function App() {
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/cookies" element={<Cookies />} />
+              <Route path="/guide/:id" element={<Guide />} /> {/* Add the Guide route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
             <MobileNavbar /> 
