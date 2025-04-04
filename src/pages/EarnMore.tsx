@@ -3,8 +3,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import ProjectLists from "./ProjectLists";
-
-
 import { toast } from 'sonner';
 import {
     getUserReferrals,
@@ -104,7 +102,6 @@ const EarnMore = () => {
 
     const [activeFilter, setActiveFilter] = useState<string>("all");
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState<'referral' | 'projects'>('referral');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [referrals, setReferrals] = useState<any[]>([]);
@@ -113,6 +110,18 @@ const EarnMore = () => {
     const [referralCode, setReferralCode] = useState('');
     const [referralLink, setReferralLink] = useState('');
     const [error, setError] = useState<string | null>(null);
+
+// In EarnMore component
+const [activeTab, setActiveTab] = useState<'referral' | 'projects'>(
+    localStorage.getItem('earnMoreActiveTab') as 'referral' | 'projects' || 'referral'
+  );
+  
+  // Update localStorage when tab changes
+  useEffect(() => {
+    localStorage.setItem('earnMoreActiveTab', activeTab);
+  }, [activeTab]);
+
+
 
     const fetchReferrals = async () => {
         if (!user) {
@@ -251,9 +260,15 @@ const EarnMore = () => {
                         )}
                     </div>
 
-                    <Tabs
+                    {/* <Tabs
                         value={activeTab}
-                        onValueChange={(value) => setActiveTab(value as 'referral' | 'projects')}
+                        onValueChange={(value) => setActiveTab(value as 'referral' | 'projects')} */}
+                        <Tabs 
+  value={activeTab}
+  onValueChange={(value) => {
+    setActiveTab(value as 'referral' | 'projects');
+    sessionStorage.setItem('earnMoreActiveTab', value);
+  }}
                         className="mb-8"
                     >
                         <TabsList className="grid w-full grid-cols-2 bg-muted h-12">
@@ -546,6 +561,7 @@ const EarnMore = () => {
                                 )}
                             </div>
                         </TabsContent>
+                        
                         <TabsContent value="projects">
                             {/* Crypto Projects Content */}
                             <div className="mb-6">
@@ -562,8 +578,6 @@ const EarnMore = () => {
                                     ))}
                                 </div>
                             </div>
-
-                            {/* Use ProjectList Component */}
                             <ProjectLists activeFilter={activeFilter} />
                         </TabsContent>
                     </Tabs>
