@@ -304,7 +304,7 @@ const ReferralSection = () => {
                     {referrals.length > 3 && (
                       <div className="text-center mt-4">
                         <Button asChild variant="outline">
-                          <RouterLink to="/referrals">
+                          <RouterLink to="/EarnMore">
                             View All Referrals
                             <ArrowRight className="ml-2 h-4 w-4" />
                           </RouterLink>

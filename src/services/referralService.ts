@@ -15,9 +15,7 @@ export interface Referral {
 
 // Get referrals for a user
 export const getUserReferrals = async (userId: string): Promise<Referral[]> => {
-  try {
-    console.log("Getting referrals for user:", userId);
-    
+  try {    
     // Use a simple query without orderBy to avoid index issues
     const referralsQuery = query(
       collection(db, 'referrals'),
@@ -26,9 +24,7 @@ export const getUserReferrals = async (userId: string): Promise<Referral[]> => {
     
     const referralsSnapshot = await getDocs(referralsQuery);
     const referrals: Referral[] = [];
-    
-    console.log(`Found ${referralsSnapshot.size} referrals`);
-    
+      
     referralsSnapshot.forEach((doc) => {
       const data = doc.data();
       referrals.push({
@@ -57,7 +53,6 @@ export const getUserReferrals = async (userId: string): Promise<Referral[]> => {
 
 // Generate a referral link
 export const generateReferralLink = (referralCode: string): string => {
-  console.log("Generating referral link with code:", referralCode);
   
   if (!referralCode) {
     console.error('No referral code provided to generate link');
@@ -66,14 +61,12 @@ export const generateReferralLink = (referralCode: string): string => {
   
   const baseUrl = window.location.origin;
   const link = `${baseUrl}/signup?ref=${encodeURIComponent(referralCode)}`;
-  console.log("Generated link:", link);
   return link;
 };
 
 // Get user's referral code
 export const getUserReferralCode = async (userId: string): Promise<string> => {
   try {
-    console.log("Getting referral code for user:", userId);
     
     if (!userId) {
       console.error('No user ID provided');
@@ -85,18 +78,14 @@ export const getUserReferralCode = async (userId: string): Promise<string> => {
     
     if (userDoc.exists()) {
       const userData = userDoc.data();
-      console.log("User data:", userData);
       
       // If user doesn't have a referral code yet, generate and save one
       if (!userData.referralCode) {
-        console.log("No referral code found, generating one");
         const newCode = generateReferralCode(userData.displayName || '');
         await updateDoc(userRef, { referralCode: newCode });
-        console.log("Generated and saved new code:", newCode);
         return newCode;
       }
       
-      console.log("Found existing referral code:", userData.referralCode);
       return userData.referralCode || '';
     } else {
       console.error("User document doesn't exist");

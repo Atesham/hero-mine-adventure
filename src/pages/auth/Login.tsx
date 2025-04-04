@@ -142,8 +142,6 @@ const Login = () => {
   
       // Send password reset email if the email is registered
       await sendPasswordResetEmail(auth, email);
-      console.log('Email registered:', signInMethods);
-
       toast.success('Password Reset Sent', {
         description: `Instructions have been sent to ${email}`
       });

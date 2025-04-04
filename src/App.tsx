@@ -25,7 +25,7 @@ import Terms from "./components/layout/terms";
 import Cookies from "./components/layout/cookies";
 import About from "./components/layout/about";
 import MobileNavbar from "./components/layout/MobileNavbar"; // Import Mobile Navbar
-
+import EarnMore from "./pages/EarnMore"; // Import Earn More component
 // Create a Query Client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,13 +44,13 @@ function App() {
           <Router>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/EarnMore" element={<EarnMore />} /> 
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/mining" element={<Mining />} />
               <Route path="/wallet" element={<Wallet />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/chat" element={<Chat />} /> {/* Add new Chat route */}
-
+              <Route path="/chat" element={<Chat />} /> 
               <Route path="/referrals" element={<Referrals />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/careers" element={<Careers />} />

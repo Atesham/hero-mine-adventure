@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Home, Pickaxe, Wallet, MessageSquare, UserPlus } from 'lucide-react';
+import { Home, Pickaxe, Wallet, MessageSquare, UserPlus, EarIcon, LucideDollarSign, DollarSignIcon, DollarSign } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion, useAnimation, AnimatePresence } from 'framer-motion';
 
@@ -43,7 +43,9 @@ const MobileNavbar = () => {
     { name: 'Mining', path: '/mining', icon: Pickaxe },
     { name: 'Wallet', path: '/wallet', icon: Wallet },
     { name: 'Chat', path: '/chat', icon: MessageSquare },
-    { name: 'Refer', path: '/referrals', icon: UserPlus },
+    // { name: 'Refer', path: '/referrals', icon: UserPlus },
+    { name: 'Earn more', path: '/EarnMore', icon: DollarSign },
+
   ];
 
   const variants = {
