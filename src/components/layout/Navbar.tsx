@@ -386,7 +386,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Moon, Sun, Wallet, BarChart, Pickaxe, LogOut, LogIn, User, MessageSquare, DollarSign } from 'lucide-react';
+import { Menu, X, Moon, Sun, Wallet, BarChart, Pickaxe, LogOut, LogIn, User, MessageSquare,   DollarSign } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { 

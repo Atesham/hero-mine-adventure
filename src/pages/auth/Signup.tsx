@@ -2675,7 +2675,7 @@ const Signup = () => {
             userId: userCredential.user.uid,
             type: 'reward',
             amount: 25,
-            description: 'Welcome bonus for joining via referral',
+            description: 'Welcome bonus for joining via referral with code ${data.referralCode}',
             timestamp: serverTimestamp()
           });
 
@@ -2881,6 +2881,7 @@ const Signup = () => {
                       <>
                         <Clock className="mr-2 h-4 w-4" />
                         Resend in {countdown}s
+
                       </>
                     ) : (
                       <>
