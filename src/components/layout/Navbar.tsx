@@ -386,7 +386,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Moon, Sun, Wallet, BarChart, Pickaxe, LogOut, LogIn, User, MessageSquare } from 'lucide-react';
+import { Menu, X, Moon, Sun, Wallet, BarChart, Pickaxe, LogOut, LogIn, User, MessageSquare, DollarSign } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { 
@@ -449,6 +449,8 @@ const Navbar = () => {
     { name: 'Home', path: '/' },
     { name: 'Mining', path: '/mining', icon: <Pickaxe className="h-4 w-4 mr-1" /> },
     { name: 'Wallet', path: '/wallet', icon: <Wallet className="h-4 w-4 mr-1" /> },
+        { name: 'Earn more', path: '/EarnMore', icon: <DollarSign className="h-4 w-4 mr-1" />},
+    
     { name: 'Chat', path: '/chat', icon: <MessageSquare className="h-4 w-4 mr-1" /> },
     ...(isMobile ? [] : [{ name: 'Leaderboard', path: '/leaderboard', icon: <BarChart className="h-4 w-4 mr-1" /> }]),
   ];
