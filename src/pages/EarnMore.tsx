@@ -32,7 +32,8 @@ import {
     Zap,
     ChevronRight,
     Clock,
-    UserPlus
+    UserPlus,
+    Link
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -111,22 +112,22 @@ const EarnMore = () => {
     const [referralLink, setReferralLink] = useState('');
     const [error, setError] = useState<string | null>(null);
 
-// In EarnMore component
-const [activeTab, setActiveTab] = useState<'referral' | 'projects'>(
-    localStorage.getItem('earnMoreActiveTab') as 'referral' | 'projects' || 'referral'
-  );
-  
-  // Update localStorage when tab changes
-  useEffect(() => {
-    localStorage.setItem('earnMoreActiveTab', activeTab);
-  }, [activeTab]);
+    // In EarnMore component
+    const [activeTab, setActiveTab] = useState<'referral' | 'projects'>(
+        localStorage.getItem('earnMoreActiveTab') as 'referral' | 'projects' || 'referral'
+    );
+
+    // Update localStorage when tab changes
+    useEffect(() => {
+        localStorage.setItem('earnMoreActiveTab', activeTab);
+    }, [activeTab]);
 
 
 
     const fetchReferrals = async () => {
         if (!user) {
             setLoading(false);
-            setError("You must be logged in to view referrals");
+            setError("You must be logged in to earn more");
             return;
         }
 
@@ -228,9 +229,13 @@ const [activeTab, setActiveTab] = useState<'referral' | 'projects'>(
                                 <Users className="w-8 h-8 text-red-500" />
                             </div>
                             <h3 className="mt-4 text-lg font-semibold text-red-500">{error}</h3>
-                            <Button onClick={handleRefresh} className="mt-4">
-                                Try Again
-                            </Button>
+                            {/* <Button onClick={handleRefresh} className="mt-4">
+                                Login now
+                            </Button> */}
+                           <Link href="/login" >
+        <Button className="mt-4">Login now</Button>
+      </Link>
+                        
                         </div>
                     </div>
                 </main>
@@ -260,15 +265,12 @@ const [activeTab, setActiveTab] = useState<'referral' | 'projects'>(
                         )}
                     </div>
 
-                    {/* <Tabs
+                    <Tabs
                         value={activeTab}
-                        onValueChange={(value) => setActiveTab(value as 'referral' | 'projects')} */}
-                        <Tabs 
-  value={activeTab}
-  onValueChange={(value) => {
-    setActiveTab(value as 'referral' | 'projects');
-    sessionStorage.setItem('earnMoreActiveTab', value);
-  }}
+                        onValueChange={(value) => {
+                            setActiveTab(value as 'referral' | 'projects');
+                            sessionStorage.setItem('earnMoreActiveTab', value);
+                        }}
                         className="mb-8"
                     >
                         <TabsList className="grid w-full grid-cols-2 bg-muted h-12">
@@ -561,7 +563,7 @@ const [activeTab, setActiveTab] = useState<'referral' | 'projects'>(
                                 )}
                             </div>
                         </TabsContent>
-                        
+
                         <TabsContent value="projects">
                             {/* Crypto Projects Content */}
                             <div className="mb-6">

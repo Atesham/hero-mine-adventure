@@ -27,7 +27,7 @@ const ReferralSection = () => {
   const fetchReferralData = async () => {
     if (!user) {
       setLoading(false);
-      setError("You must be logged in to see referral data");
+      setError("You must be logged in to earn more");
       return;
     }
     

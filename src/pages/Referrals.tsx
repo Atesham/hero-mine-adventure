@@ -25,7 +25,7 @@ const ReferralsPage = () => {
   const fetchReferrals = async () => {
     if (!user) {
       setLoading(false);
-      setError("You must be logged in to view referrals");
+      setError("You must be logged in to earn more");
       return;
     }
 
